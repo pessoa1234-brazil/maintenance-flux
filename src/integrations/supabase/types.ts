@@ -14,16 +14,454 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ativos: {
+        Row: {
+          created_at: string
+          data_instalacao: string
+          garantia_meses: number
+          id: string
+          marca_modelo: string
+          nome: string
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_instalacao: string
+          garantia_meses: number
+          id?: string
+          marca_modelo: string
+          nome: string
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_instalacao?: string
+          garantia_meses?: number
+          id?: string
+          marca_modelo?: string
+          nome?: string
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ativos_documentos: {
+        Row: {
+          ativo_id: string
+          documento_id: string
+        }
+        Insert: {
+          ativo_id: string
+          documento_id: string
+        }
+        Update: {
+          ativo_id?: string
+          documento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_documentos_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ativos_documentos_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklists: {
+        Row: {
+          created_at: string
+          id: string
+          os_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          os_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          os_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: true
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          tipo: Database["public"]["Enums"]["tipo_documento"]
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: Database["public"]["Enums"]["tipo_documento"]
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: Database["public"]["Enums"]["tipo_documento"]
+          url?: string
+        }
+        Relationships: []
+      }
+      empreendimentos: {
+        Row: {
+          cep: string
+          cidade: string
+          construtora_id: string
+          created_at: string
+          data_entrega: string
+          endereco: string
+          estado: string
+          id: string
+          nome: string
+          total_unidades: number
+          updated_at: string
+        }
+        Insert: {
+          cep: string
+          cidade: string
+          construtora_id: string
+          created_at?: string
+          data_entrega: string
+          endereco: string
+          estado: string
+          id?: string
+          nome: string
+          total_unidades?: number
+          updated_at?: string
+        }
+        Update: {
+          cep?: string
+          cidade?: string
+          construtora_id?: string
+          created_at?: string
+          data_entrega?: string
+          endereco?: string
+          estado?: string
+          id?: string
+          nome?: string
+          total_unidades?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      itens_checklist: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preenchido: boolean
+          resposta_bool: boolean | null
+          resposta_texto: string | null
+          resposta_url: string | null
+          texto: string
+          tipo: Database["public"]["Enums"]["tipo_item_checklist"]
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          ordem?: number
+          preenchido?: boolean
+          resposta_bool?: boolean | null
+          resposta_texto?: string | null
+          resposta_url?: string | null
+          texto: string
+          tipo: Database["public"]["Enums"]["tipo_item_checklist"]
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          ordem?: number
+          preenchido?: boolean
+          resposta_bool?: boolean | null
+          resposta_texto?: string | null
+          resposta_url?: string | null
+          texto?: string
+          tipo?: Database["public"]["Enums"]["tipo_item_checklist"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_checklist_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          os_id: string
+          prazo_dias: number | null
+          prestador_id: string
+          status: Database["public"]["Enums"]["status_orcamento"]
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          os_id: string
+          prazo_dias?: number | null
+          prestador_id: string
+          status?: Database["public"]["Enums"]["status_orcamento"]
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          os_id?: string
+          prazo_dias?: number | null
+          prestador_id?: string
+          status?: Database["public"]["Enums"]["status_orcamento"]
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_servico: {
+        Row: {
+          ativo_id: string | null
+          created_at: string
+          data_conclusao: string | null
+          data_solicitacao: string
+          descricao: string | null
+          id: string
+          origem: Database["public"]["Enums"]["origem_os"]
+          prestador_id: string | null
+          solicitante_id: string
+          status: Database["public"]["Enums"]["status_os"]
+          titulo: string
+          unidade_id: string
+          updated_at: string
+          valor_final: number | null
+        }
+        Insert: {
+          ativo_id?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          data_solicitacao?: string
+          descricao?: string | null
+          id?: string
+          origem: Database["public"]["Enums"]["origem_os"]
+          prestador_id?: string | null
+          solicitante_id: string
+          status?: Database["public"]["Enums"]["status_os"]
+          titulo: string
+          unidade_id: string
+          updated_at?: string
+          valor_final?: number | null
+        }
+        Update: {
+          ativo_id?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          data_solicitacao?: string
+          descricao?: string | null
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_os"]
+          prestador_id?: string | null
+          solicitante_id?: string
+          status?: Database["public"]["Enums"]["status_os"]
+          titulo?: string
+          unidade_id?: string
+          updated_at?: string
+          valor_final?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          document: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          document?: string | null
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          document?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      unidades: {
+        Row: {
+          bloco: string | null
+          condominio_id: string | null
+          created_at: string
+          empreendimento_id: string
+          id: string
+          numero: string
+          updated_at: string
+        }
+        Insert: {
+          bloco?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          empreendimento_id: string
+          id?: string
+          numero: string
+          updated_at?: string
+        }
+        Update: {
+          bloco?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          empreendimento_id?: string
+          id?: string
+          numero?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "construtora" | "condominio" | "prestador"
+      origem_os: "GARANTIA" | "MANUTENCAO_PREVENTIVA" | "MANUTENCAO_CORRETIVA"
+      status_orcamento: "PENDENTE" | "ACEITO" | "RECUSADO"
+      status_os:
+        | "A_FAZER"
+        | "PENDENTE_ORCAMENTO"
+        | "EM_ANDAMENTO"
+        | "CONCLUIDA"
+        | "CANCELADA"
+      tipo_documento:
+        | "NOTA_FISCAL"
+        | "MANUAL_TECNICO"
+        | "LAUDO"
+        | "FOTO"
+        | "OUTRO"
+      tipo_item_checklist: "CHECKBOX" | "TEXTO" | "FOTO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +588,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "construtora", "condominio", "prestador"],
+      origem_os: ["GARANTIA", "MANUTENCAO_PREVENTIVA", "MANUTENCAO_CORRETIVA"],
+      status_orcamento: ["PENDENTE", "ACEITO", "RECUSADO"],
+      status_os: [
+        "A_FAZER",
+        "PENDENTE_ORCAMENTO",
+        "EM_ANDAMENTO",
+        "CONCLUIDA",
+        "CANCELADA",
+      ],
+      tipo_documento: [
+        "NOTA_FISCAL",
+        "MANUAL_TECNICO",
+        "LAUDO",
+        "FOTO",
+        "OUTRO",
+      ],
+      tipo_item_checklist: ["CHECKBOX", "TEXTO", "FOTO"],
+    },
   },
 } as const
