@@ -1,4 +1,4 @@
-import { LayoutDashboard, KanbanSquare, Archive } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Archive, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ const navigationItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "pipeline", label: "Pipeline de OS", icon: KanbanSquare },
   { id: "ativos", label: "Cofre de Ativos", icon: Archive },
+  { id: "relatorios", label: "Relatórios", icon: BarChart3 },
 ];
 
 export const Sidebar = ({ activeView, onNavigate }: SidebarProps) => {

@@ -3,12 +3,13 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Pipeline } from "@/components/pipeline/Pipeline";
 import { Ativos } from "@/components/ativos/Ativos";
+import { Relatorios } from "@/components/relatorios/Relatorios";
 import { ModalOS } from "@/components/modals/ModalOS";
 import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 
-type View = "dashboard" | "pipeline" | "ativos";
+type View = "dashboard" | "pipeline" | "ativos" | "relatorios";
 
 const Index = () => {
   const [activeView, setActiveView] = useState<View>("dashboard");
@@ -82,6 +83,7 @@ const Index = () => {
         {activeView === "dashboard" && <Dashboard db={db} />}
         {activeView === "pipeline" && <Pipeline db={db} onOpenOS={setSelectedOSId} />}
         {activeView === "ativos" && <Ativos db={db} onOpenAtivo={setSelectedAtivoId} />}
+        {activeView === "relatorios" && <Relatorios db={db} />}
       </main>
 
       {selectedOS && (
