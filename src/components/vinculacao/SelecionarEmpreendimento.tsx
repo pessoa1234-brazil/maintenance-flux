@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, MapPin, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, MapPin, Calendar, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,12 +23,17 @@ interface SelecionarEmpreendimentoProps {
   selectedId?: string | null;
 }
 
+type SortField = "nome" | "data_entrega" | "total_unidades";
+type SortOrder = "asc" | "desc";
+
 export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmpreendimentoProps) => {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [filteredEmps, setFilteredEmps] = useState<Empreendimento[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCidade, setFilterCidade] = useState<string>("all");
   const [filterEstado, setFilterEstado] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("nome");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -57,13 +62,33 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
       filtered = filtered.filter((e) => e.estado === filterEstado);
     }
 
+    // Ordenação
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === "nome") {
+        comparison = a.nome.localeCompare(b.nome);
+      } else if (sortField === "data_entrega") {
+        comparison = new Date(a.data_entrega).getTime() - new Date(b.data_entrega).getTime();
+      } else if (sortField === "total_unidades") {
+        comparison = a.total_unidades - b.total_unidades;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
     setFilteredEmps(filtered);
     setCurrentPage(1); // Reset para primeira página quando filtros mudam
-  }, [searchTerm, filterCidade, filterEstado, empreendimentos]);
+  }, [searchTerm, filterCidade, filterEstado, sortField, sortOrder, empreendimentos]);
 
   // Extrair lista única de cidades e estados
   const cidades = Array.from(new Set(empreendimentos.map((e) => e.cidade))).sort();
   const estados = Array.from(new Set(empreendimentos.map((e) => e.estado))).sort();
+
+  // Contar filtros ativos
+  const activeFiltersCount = [
+    searchTerm !== "",
+    filterCidade !== "all",
+    filterEstado !== "all",
+  ].filter(Boolean).length;
 
   // Calcular paginação
   const totalPages = Math.ceil(filteredEmps.length / itemsPerPage);
@@ -104,6 +129,40 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
 
   return (
     <div className="space-y-4">
+      {/* Cabeçalho com contador de filtros */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filtros</span>
+          {activeFiltersCount > 0 && (
+            <Badge variant="secondary" className="ml-1">
+              {activeFiltersCount} ativo{activeFiltersCount > 1 ? "s" : ""}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="sort" className="text-sm">Ordenar por:</Label>
+          <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+            <SelectTrigger id="sort" className="w-[160px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nome">Nome</SelectItem>
+              <SelectItem value="data_entrega">Data de Entrega</SelectItem>
+              <SelectItem value="total_unidades">Nº Unidades</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+            className="h-8 w-8 p-0"
+          >
+            {sortOrder === "asc" ? "↑" : "↓"}
+          </Button>
+        </div>
+      </div>
+
       <div className="space-y-3">
         <div>
           <Label htmlFor="search">Buscar por Nome</Label>
@@ -112,6 +171,7 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
             placeholder="Digite o nome do empreendimento..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className={searchTerm ? "ring-2 ring-primary/20" : ""}
           />
         </div>
 
@@ -119,7 +179,10 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
           <div>
             <Label htmlFor="filter-estado">Filtrar por Estado</Label>
             <Select value={filterEstado} onValueChange={setFilterEstado}>
-              <SelectTrigger id="filter-estado">
+              <SelectTrigger 
+                id="filter-estado"
+                className={filterEstado !== "all" ? "ring-2 ring-primary/20" : ""}
+              >
                 <SelectValue placeholder="Todos os estados" />
               </SelectTrigger>
               <SelectContent>
@@ -136,7 +199,10 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
           <div>
             <Label htmlFor="filter-cidade">Filtrar por Cidade</Label>
             <Select value={filterCidade} onValueChange={setFilterCidade}>
-              <SelectTrigger id="filter-cidade">
+              <SelectTrigger 
+                id="filter-cidade"
+                className={filterCidade !== "all" ? "ring-2 ring-primary/20" : ""}
+              >
                 <SelectValue placeholder="Todas as cidades" />
               </SelectTrigger>
               <SelectContent>
@@ -151,10 +217,12 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
           </div>
         </div>
 
-        {(searchTerm || filterCidade !== "all" || filterEstado !== "all") && (
-          <Button variant="outline" size="sm" onClick={handleClearFilters}>
-            Limpar Filtros
-          </Button>
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleClearFilters}>
+              Limpar {activeFiltersCount} Filtro{activeFiltersCount > 1 ? "s" : ""}
+            </Button>
+          </div>
         )}
       </div>
 
