@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,22 +102,35 @@ serve(async (req) => {
         : `A OS "${alerta.titulo}" está próxima do prazo limite (${alerta.horas_restantes}h restantes - ${alerta.percentual_consumido}% do prazo consumido).`;
 
       try {
-        await resend.emails.send({
-          from: "Manutenção360 <onboarding@resend.dev>",
-          to: [alerta.email],
-          subject: assunto,
-          html: `
-            <h2>${assunto}</h2>
-            <p>Olá ${alerta.nome},</p>
-            <p>${mensagem}</p>
-            <hr>
-            <p><strong>Ordem de Serviço:</strong> ${alerta.titulo}</p>
-            <p><strong>ID:</strong> ${alerta.os_id.substring(0, 8)}</p>
-            <p><strong>Tempo restante:</strong> ${alerta.horas_restantes} horas</p>
-            <p><strong>Prazo consumido:</strong> ${alerta.percentual_consumido}%</p>
-            <hr>
-            <p>Acesse a plataforma para mais detalhes.</p>
-          `,
+        const resendApiKey = Deno.env.get("RESEND_API_KEY");
+        if (!resendApiKey) {
+          console.error("RESEND_API_KEY não configurado");
+          continue;
+        }
+
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: "Manutenção360 <onboarding@resend.dev>",
+            to: [alerta.email],
+            subject: assunto,
+            html: `
+              <h2>${assunto}</h2>
+              <p>Olá ${alerta.nome},</p>
+              <p>${mensagem}</p>
+              <hr>
+              <p><strong>Ordem de Serviço:</strong> ${alerta.titulo}</p>
+              <p><strong>ID:</strong> ${alerta.os_id.substring(0, 8)}</p>
+              <p><strong>Tempo restante:</strong> ${alerta.horas_restantes} horas</p>
+              <p><strong>Prazo consumido:</strong> ${alerta.percentual_consumido}%</p>
+              <hr>
+              <p>Acesse a plataforma para mais detalhes.</p>
+            `,
+          }),
         });
         console.log(`Email enviado para ${alerta.email}`);
       } catch (emailError) {

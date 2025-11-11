@@ -135,8 +135,9 @@ Retorne uma análise estruturada e acionável.`;
     );
   } catch (error) {
     console.error('Erro na previsão:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

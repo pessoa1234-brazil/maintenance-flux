@@ -1,32 +1,58 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Star, Zap, Award, Target, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trophy, Star, TrendingUp, Award, Zap, Clock } from "lucide-react";
+import { toast } from "sonner";
 
-interface Badge {
+interface PrestadorPontos {
+  id: string;
+  prestador_id: string;
+  pontos_totais: number;
+  nivel: number;
+  servicos_completados: number;
+  avaliacoes_5_estrelas: number;
+  tempo_resposta_medio_horas: number | null;
+  taxa_conclusao: number;
+  profiles: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
+interface BadgeData {
   id: string;
   nome: string;
   descricao: string;
-  icon: any;
-  requisito: number;
-  conquistado: boolean;
+  icone: string;
+  criterio: string;
+  pontos_necessarios: number;
+  cor: string;
+  raridade: string;
 }
 
-interface PrestadorStats {
-  nivel: number;
+interface PrestadorBadge {
+  badge_id: string;
+  conquistado_em: string;
+  badges: BadgeData;
+}
+
+interface HistoricoPonto {
   pontos: number;
-  proximoNivel: number;
-  badges: Badge[];
-  servicos_concluidos: number;
-  nota_media: number;
-  pontualidade: number;
+  motivo: string;
+  created_at: string;
 }
 
 export const GamificationSystem = () => {
-  const [stats, setStats] = useState<PrestadorStats | null>(null);
+  const [userPontos, setUserPontos] = useState<PrestadorPontos | null>(null);
+  const [userBadges, setUserBadges] = useState<PrestadorBadge[]>([]);
+  const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
+  const [ranking, setRanking] = useState<PrestadorPontos[]>([]);
+  const [historico, setHistorico] = useState<HistoricoPonto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGamificationData();
@@ -37,224 +63,295 @@ export const GamificationSystem = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar perfil do prestador
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("nota_media, total_avaliacoes")
-        .eq("id", user.id)
+      setCurrentUserId(user.id);
+
+      // Carregar pontos do usuário
+      const { data: pontos } = await supabase
+        .from('prestador_pontos')
+        .select('*, profiles(full_name, avatar_url)')
+        .eq('prestador_id', user.id)
         .single();
 
-      // Buscar OS do prestador
-      const { data: osData } = await supabase
-        .from("ordens_servico")
-        .select("*")
-        .eq("prestador_id", user.id);
+      setUserPontos(pontos);
 
-      const servicosConcluidos = osData?.filter(os => os.status === "CONCLUIDA").length || 0;
-      const totalServicos = osData?.length || 0;
+      // Carregar badges do usuário
+      const { data: badges } = await supabase
+        .from('prestador_badges')
+        .select('*, badges(*)')
+        .eq('prestador_id', user.id)
+        .order('conquistado_em', { ascending: false });
 
-      // Calcular pontualidade (serviços concluídos dentro do prazo)
-      const noPrazo = osData?.filter(os => 
-        os.status === "CONCLUIDA" && 
-        os.data_limite_atendimento && 
-        os.data_conclusao &&
-        new Date(os.data_conclusao) <= new Date(os.data_limite_atendimento)
-      ).length || 0;
+      setUserBadges(badges || []);
 
-      const pontualidade = totalServicos > 0 ? (noPrazo / servicosConcluidos) * 100 : 0;
+      // Carregar todos os badges disponíveis
+      const { data: allBadgesData } = await supabase
+        .from('badges')
+        .select('*')
+        .order('pontos_necessarios', { ascending: true });
 
-      // Calcular nível e pontos
-      const pontos = servicosConcluidos * 10 + (profile?.nota_media || 0) * 20 + pontualidade;
-      const nivel = Math.floor(pontos / 100) + 1;
-      const proximoNivel = nivel * 100;
+      setAllBadges(allBadgesData || []);
 
-      // Definir badges
-      const badges: Badge[] = [
-        {
-          id: "iniciante",
-          nome: "Iniciante",
-          descricao: "Complete seu primeiro serviço",
-          icon: Star,
-          requisito: 1,
-          conquistado: servicosConcluidos >= 1
-        },
-        {
-          id: "experiente",
-          nome: "Experiente",
-          descricao: "Complete 10 serviços",
-          icon: Trophy,
-          requisito: 10,
-          conquistado: servicosConcluidos >= 10
-        },
-        {
-          id: "mestre",
-          nome: "Mestre",
-          descricao: "Complete 50 serviços",
-          icon: Award,
-          requisito: 50,
-          conquistado: servicosConcluidos >= 50
-        },
-        {
-          id: "5_estrelas",
-          nome: "5 Estrelas",
-          descricao: "Mantenha nota média 4.5+",
-          icon: Star,
-          requisito: 4.5,
-          conquistado: (profile?.nota_media || 0) >= 4.5
-        },
-        {
-          id: "pontual",
-          nome: "Pontual",
-          descricao: "80% de pontualidade",
-          icon: Clock,
-          requisito: 80,
-          conquistado: pontualidade >= 80
-        },
-        {
-          id: "relampago",
-          nome: "Relâmpago",
-          descricao: "Complete 20 serviços em um mês",
-          icon: Zap,
-          requisito: 20,
-          conquistado: false // Requer lógica temporal adicional
-        }
-      ];
+      // Carregar ranking (top 10)
+      const { data: rankingData } = await supabase
+        .from('prestador_pontos')
+        .select('*, profiles(full_name, avatar_url)')
+        .order('pontos_totais', { ascending: false })
+        .limit(10);
 
-      setStats({
-        nivel,
-        pontos,
-        proximoNivel,
-        badges,
-        servicos_concluidos: servicosConcluidos,
-        nota_media: profile?.nota_media || 0,
-        pontualidade: Math.round(pontualidade)
-      });
+      setRanking(rankingData || []);
+
+      // Carregar histórico de pontos
+      const { data: historicoData } = await supabase
+        .from('historico_pontos')
+        .select('*')
+        .eq('prestador_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      setHistorico(historicoData || []);
+
     } catch (error) {
-      console.error("Erro ao carregar gamificação:", error);
+      console.error('Erro ao carregar dados de gamificação:', error);
+      toast.error("Erro ao carregar dados de gamificação");
     } finally {
       setLoading(false);
     }
   };
 
+  const getNivelProgress = () => {
+    if (!userPontos) return 0;
+    const pontosParaProximoNivel = [100, 300, 600, 1000];
+    const nivel = userPontos.nivel;
+    
+    if (nivel >= 5) {
+      const base = 1000 + ((nivel - 5) * 500);
+      const proximo = base + 500;
+      const progresso = ((userPontos.pontos_totais - base) / 500) * 100;
+      return Math.min(progresso, 100);
+    }
+    
+    const anterior = nivel === 1 ? 0 : pontosParaProximoNivel[nivel - 2];
+    const proximo = pontosParaProximoNivel[nivel - 1];
+    const progresso = ((userPontos.pontos_totais - anterior) / (proximo - anterior)) * 100;
+    return Math.min(progresso, 100);
+  };
+
+  const getRaridadeColor = (raridade: string) => {
+    const colors: any = {
+      'comum': 'bg-gray-500',
+      'raro': 'bg-blue-500',
+      'épico': 'bg-purple-500',
+      'lendário': 'bg-yellow-500'
+    };
+    return colors[raridade] || 'bg-gray-500';
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center p-12">Carregando...</div>;
   }
-
-  if (!stats) return null;
-
-  const progressoNivel = ((stats.pontos % 100) / 100) * 100;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold">Gamificação</h2>
-        <p className="text-muted-foreground">Seu progresso e conquistas</p>
+        <h2 className="text-3xl font-bold tracking-tight">Sistema de Gamificação</h2>
+        <p className="text-muted-foreground">
+          Acompanhe seu progresso, conquistas e ranking
+        </p>
       </div>
 
-      {/* Nível e Progresso */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Nível {stats.nivel}</CardTitle>
-              <CardDescription>{stats.pontos} pontos totais</CardDescription>
-            </div>
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              <Trophy className="h-5 w-5 mr-2" />
-              Nível {stats.nivel}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progresso para Nível {stats.nivel + 1}</span>
-              <span>{stats.pontos % 100} / 100 pontos</span>
-            </div>
-            <Progress value={progressoNivel} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Estatísticas Principais */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Serviços Concluídos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pontos Totais</CardTitle>
+            <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.servicos_concluidos}</div>
+            <div className="text-2xl font-bold">{userPontos?.pontos_totais || 0}</div>
+            <p className="text-xs text-muted-foreground">Nível {userPontos?.nivel || 1}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Nota Média</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Serviços</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.nota_media.toFixed(1)} ⭐</div>
+            <div className="text-2xl font-bold">{userPontos?.servicos_completados || 0}</div>
+            <p className="text-xs text-muted-foreground">Completados</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Pontualidade</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">5 Estrelas</CardTitle>
+            <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pontualidade}%</div>
+            <div className="text-2xl font-bold">{userPontos?.avaliacoes_5_estrelas || 0}</div>
+            <p className="text-xs text-muted-foreground">Avaliações máximas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {userPontos?.tempo_resposta_medio_horas 
+                ? `${userPontos.tempo_resposta_medio_horas.toFixed(1)}h`
+                : 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground">Resposta</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Badges */}
+      {/* Progresso de Nível */}
       <Card>
         <CardHeader>
-          <CardTitle>Badges e Conquistas</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Progresso do Nível {userPontos?.nivel || 1}
+          </CardTitle>
           <CardDescription>
-            {stats.badges.filter(b => b.conquistado).length} de {stats.badges.length} conquistados
+            {userPontos?.pontos_totais || 0} pontos acumulados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {stats.badges.map((badge) => {
-              const Icon = badge.icon;
-              return (
-                <div
-                  key={badge.id}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    badge.conquistado
-                      ? "border-primary bg-primary/5"
-                      : "border-muted bg-muted/20 opacity-50"
-                  }`}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div
-                      className={`p-3 rounded-full ${
-                        badge.conquistado ? "bg-primary text-primary-foreground" : "bg-muted"
-                      }`}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{badge.nome}</p>
-                      <p className="text-xs text-muted-foreground">{badge.descricao}</p>
-                    </div>
-                    {badge.conquistado && (
-                      <Badge variant="secondary" className="text-xs">
-                        Conquistado!
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Progress value={getNivelProgress()} className="h-3" />
+          <p className="text-sm text-muted-foreground mt-2">
+            Continue conquistando pontos para subir de nível!
+          </p>
         </CardContent>
       </Card>
+
+      {/* Tabs: Badges, Ranking, Histórico */}
+      <Tabs defaultValue="badges" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="badges">Badges</TabsTrigger>
+          <TabsTrigger value="ranking">Ranking</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="badges" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Suas Conquistas</CardTitle>
+              <CardDescription>
+                {userBadges.length} de {allBadges.length} badges conquistados
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {allBadges.map((badge) => {
+                  const conquistado = userBadges.find(ub => ub.badge_id === badge.id);
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`p-4 border rounded-lg text-center transition-all ${
+                        conquistado 
+                          ? 'bg-primary/5 border-primary shadow-lg' 
+                          : 'bg-muted/20 opacity-50 grayscale'
+                      }`}
+                    >
+                      <div className="text-4xl mb-2">{badge.icone}</div>
+                      <h4 className="font-semibold text-sm">{badge.nome}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {badge.descricao}
+                      </p>
+                      <Badge className={`mt-2 ${getRaridadeColor(badge.raridade)}`}>
+                        {badge.raridade}
+                      </Badge>
+                      {conquistado && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {new Date(conquistado.conquistado_em).toLocaleDateString('pt-BR')}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ranking">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Top 10 Prestadores
+              </CardTitle>
+              <CardDescription>Ranking baseado em pontos totais</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {ranking.map((prestador, index) => (
+                  <div
+                    key={prestador.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      prestador.prestador_id === currentUserId 
+                        ? 'bg-primary/10 border-primary' 
+                        : 'bg-card'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${
+                        index === 0 ? 'bg-yellow-500 text-white' :
+                        index === 1 ? 'bg-gray-400 text-white' :
+                        index === 2 ? 'bg-orange-600 text-white' :
+                        'bg-muted'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{prestador.profiles?.full_name || 'Prestador'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Nível {prestador.nivel} · {prestador.servicos_completados} serviços
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{prestador.pontos_totais}</p>
+                      <p className="text-xs text-muted-foreground">pontos</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Pontos</CardTitle>
+              <CardDescription>Últimas 20 conquistas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {historico.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{item.motivo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(item.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <Badge variant={item.pontos > 0 ? "default" : "destructive"}>
+                      {item.pontos > 0 ? '+' : ''}{item.pontos} pts
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
