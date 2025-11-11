@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, CheckCircle2, XCircle, AlertTriangle, Calendar, AlertCircle } from "lucide-react";
+import { FileDown, CheckCircle2, XCircle, AlertTriangle, Calendar, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import jsPDF from "jspdf";
 
 interface DadosRelatorio {
   empreendimento: any;
@@ -143,19 +144,93 @@ export const RelatorioConformidade = () => {
   };
 
   const gerarPDF = async () => {
+    if (!dados) {
+      toast.error("Nenhum relatório carregado");
+      return;
+    }
+
     setGenerating(true);
     try {
-      // Aqui você pode integrar com uma biblioteca de geração de PDF
-      // ou chamar uma edge function que gera o PDF
-      toast.info("Funcionalidade de geração de PDF em desenvolvimento");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Relatorio de Conformidade NBR 5674", pageWidth / 2, yPos, { align: "center" });
       
-      // Simulação
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      yPos += 10;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(dados.empreendimento.nome, pageWidth / 2, yPos, { align: "center" });
+      yPos += 6;
+      doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth / 2, yPos, { align: "center" });
+
+      yPos += 15;
+
+      // Status
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Status de Conformidade", 15, yPos);
+      yPos += 8;
       
-      toast.success("Relatório gerado com sucesso!");
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const status = dados.garantias_status.preservadas
+        ? "CONFORME - Garantias preservadas"
+        : `NAO CONFORME - ${dados.garantias_status.motivo}`;
+      doc.text(status, 15, yPos);
+      yPos += 12;
+
+      // Resumo
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumo do Periodo", 15, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const resumo = [
+        `Total de Manutencoes: ${dados.manutencoes.total}`,
+        `Manutencoes Preventivas: ${dados.manutencoes.preventivas}`,
+        `Garantias Acionadas: ${dados.manutencoes.garantias}`,
+        `Servicos Novos: ${dados.manutencoes.novos}`,
+        `Concluidas: ${dados.manutencoes.concluidas}`,
+        `Atrasadas: ${dados.manutencoes.atrasadas}`,
+      ];
+
+      resumo.forEach((linha) => {
+        doc.text(linha, 15, yPos);
+        yPos += 6;
+      });
+
+      yPos += 10;
+
+      // Sistemas
+      if (dados.sistemas_manutencao.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Sistemas com Manutencao", 15, yPos);
+        yPos += 8;
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        dados.sistemas_manutencao.forEach((sistema) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(`${sistema.sistema}: ${sistema.quantidade} manutencoes`, 15, yPos);
+          yPos += 5;
+        });
+      }
+
+      doc.save(`Relatorio_NBR5674_${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("PDF gerado com sucesso!");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar relatório PDF");
+      toast.error("Erro ao gerar PDF");
     } finally {
       setGenerating(false);
     }
@@ -196,7 +271,7 @@ export const RelatorioConformidade = () => {
           </p>
         </div>
         <Button onClick={gerarPDF} disabled={generating} className="gap-2">
-          <FileDown className="h-4 w-4" />
+          <Download className="h-4 w-4" />
           {generating ? "Gerando PDF..." : "Exportar PDF"}
         </Button>
       </div>

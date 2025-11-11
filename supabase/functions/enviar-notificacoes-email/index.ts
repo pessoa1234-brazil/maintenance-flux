@@ -1,7 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,19 +89,31 @@ serve(async (req) => {
           </html>
         `;
 
-        const emailResponse = await resend.emails.send({
-          from: "Manutenção360 <onboarding@resend.dev>",
-          to: [notif.destinatario],
-          subject: notif.assunto,
-          html: emailHtml,
+        const emailResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+          },
+          body: JSON.stringify({
+            from: "Manutenção360 <onboarding@resend.dev>",
+            to: [notif.destinatario],
+            subject: notif.assunto,
+            html: emailHtml,
+          }),
         });
 
-        console.log(`✅ Email enviado para ${notif.destinatario}:`, emailResponse);
+        if (!emailResponse.ok) {
+          throw new Error(`HTTP ${emailResponse.status}: ${await emailResponse.text()}`);
+        }
+
+        const emailData = await emailResponse.json();
+        console.log(`✅ Email enviado para ${notif.destinatario}:`, emailData);
         
         resultados.push({
           destinatario: notif.destinatario,
           sucesso: true,
-          id: emailResponse.id,
+          id: emailData.id,
         });
       } catch (error: any) {
         console.error(`❌ Erro ao enviar email para ${notif.destinatario}:`, error);

@@ -26,6 +26,7 @@ const App = () => (
           <Route path="/vinculacao" element={<Vinculacao />} />
           <Route path="/nova-os" element={<NovaOS />} />
           <Route path="/relatorios" element={<Relatorios />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

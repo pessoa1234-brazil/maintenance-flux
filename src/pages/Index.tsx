@@ -12,7 +12,6 @@ import { Ativos } from "@/components/ativos/Ativos";
 import { Relatorios } from "@/components/relatorios/Relatorios";
 import { Empreendimentos } from "@/components/empreendimentos/Empreendimentos";
 import { ModalOS } from "@/components/modals/ModalOS";
-import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
