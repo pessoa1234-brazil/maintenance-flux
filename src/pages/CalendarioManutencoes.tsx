@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarioManutencao } from "@/components/scheduling/CalendarioManutencao";
 import { ListaManutencoesExtraidas } from "@/components/scheduling/ListaManutencoesExtraidas";
+import { ListaAgendamentos } from "@/components/scheduling/ListaAgendamentos";
+import { DashboardConformidade } from "@/components/relatorios/DashboardConformidade";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,12 +175,31 @@ const CalendarioManutencoes = () => {
             </Card>
           )}
 
-          {empreendimento && <CalendarioManutencao />}
-
           {empreendimento && (
-            <div className="mt-6">
-              <ListaManutencoesExtraidas />
-            </div>
+            <Tabs defaultValue="calendario" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="calendario">Calendário</TabsTrigger>
+                <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
+                <TabsTrigger value="manutencoes">Manutenções Extraídas</TabsTrigger>
+                <TabsTrigger value="conformidade">Conformidade</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="calendario">
+                <CalendarioManutencao />
+              </TabsContent>
+
+              <TabsContent value="agendamentos">
+                <ListaAgendamentos />
+              </TabsContent>
+
+              <TabsContent value="manutencoes">
+                <ListaManutencoesExtraidas />
+              </TabsContent>
+
+              <TabsContent value="conformidade">
+                <DashboardConformidade />
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>

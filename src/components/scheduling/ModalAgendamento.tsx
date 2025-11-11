@@ -20,16 +20,21 @@ interface ModalAgendamentoProps {
   onClose: () => void;
   dataSelecionada: Date;
   onSuccess: () => void;
+  agendamentoEditando?: any;
 }
 
-export const ModalAgendamento = ({ isOpen, onClose, dataSelecionada, onSuccess }: ModalAgendamentoProps) => {
+export const ModalAgendamento = ({ isOpen, onClose, dataSelecionada, onSuccess, agendamentoEditando }: ModalAgendamentoProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    tipo: "manutencao_preventiva",
-    titulo: "",
-    descricao: "",
-    hora_inicio: "09:00",
-    hora_fim: "10:00",
+    tipo: agendamentoEditando?.tipo || "manutencao_preventiva",
+    titulo: agendamentoEditando?.titulo || "",
+    descricao: agendamentoEditando?.descricao || "",
+    hora_inicio: agendamentoEditando 
+      ? new Date(agendamentoEditando.data_inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : "09:00",
+    hora_fim: agendamentoEditando
+      ? new Date(agendamentoEditando.data_fim).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : "10:00",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,20 +70,37 @@ export const ModalAgendamento = ({ isOpen, onClose, dataSelecionada, onSuccess }
         throw new Error("Hora de término deve ser posterior à hora de início");
       }
 
-      const { error } = await supabase.from("agendamentos").insert({
-        tipo: formData.tipo,
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        data_inicio: dataInicio.toISOString(),
-        data_fim: dataFim.toISOString(),
-        solicitante_id: user.id,
-        prestador_id: user.id, // Mesmo usuário por enquanto
-        status: "agendado",
-      });
+      if (agendamentoEditando) {
+        // Atualizar agendamento existente
+        const { error } = await supabase
+          .from("agendamentos")
+          .update({
+            tipo: formData.tipo,
+            titulo: formData.titulo,
+            descricao: formData.descricao,
+            data_inicio: dataInicio.toISOString(),
+            data_fim: dataFim.toISOString(),
+          })
+          .eq("id", agendamentoEditando.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Agendamento atualizado com sucesso!");
+      } else {
+        // Criar novo agendamento
+        const { error } = await supabase.from("agendamentos").insert({
+          tipo: formData.tipo,
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          data_inicio: dataInicio.toISOString(),
+          data_fim: dataFim.toISOString(),
+          solicitante_id: user.id,
+          prestador_id: user.id,
+          status: "agendado",
+        });
 
-      toast.success("Agendamento criado com sucesso!");
+        if (error) throw error;
+        toast.success("Agendamento criado com sucesso!");
+      }
       onSuccess();
       onClose();
       
@@ -102,9 +124,11 @@ export const ModalAgendamento = ({ isOpen, onClose, dataSelecionada, onSuccess }
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Novo Agendamento</DialogTitle>
+          <DialogTitle>{agendamentoEditando ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
           <DialogDescription>
-            Agende uma visita técnica ou manutenção preventiva
+            {agendamentoEditando 
+              ? "Atualize os dados do agendamento" 
+              : "Agende uma visita técnica ou manutenção preventiva"}
           </DialogDescription>
         </DialogHeader>
 
@@ -198,7 +222,9 @@ export const ModalAgendamento = ({ isOpen, onClose, dataSelecionada, onSuccess }
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Criando..." : "Criar Agendamento"}
+              {loading 
+                ? (agendamentoEditando ? "Salvando..." : "Criando...") 
+                : (agendamentoEditando ? "Salvar Alterações" : "Criar Agendamento")}
             </Button>
           </div>
         </form>

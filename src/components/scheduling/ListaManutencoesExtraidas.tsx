@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Wrench, Search, Filter, Trash2, Calendar } from "lucide-react";
+import { Wrench, Search, Filter, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ExportarCronogramaPDF } from "./ExportarCronogramaPDF";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,7 @@ export const ListaManutencoesExtraidas = () => {
   const [busca, setBusca] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sistemasDisponiveis, setSistemasDisponiveis] = useState<string[]>([]);
+  const [empreendimento, setEmpreendimento] = useState<any>(null);
 
   useEffect(() => {
     carregarManutencoes();
@@ -62,6 +64,15 @@ export const ListaManutencoesExtraidas = () => {
         setLoading(false);
         return;
       }
+
+      // Carregar dados do empreendimento
+      const { data: empData } = await supabase
+        .from("empreendimentos")
+        .select("*")
+        .eq("id", profile.empreendimento_id)
+        .single();
+
+      setEmpreendimento(empData);
 
       const { data, error } = await supabase
         .from("manual_dados_estruturados")
@@ -172,10 +183,17 @@ export const ListaManutencoesExtraidas = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Manutenções Programadas</CardTitle>
-          <CardDescription>
-            Cronograma extraído dos manuais do proprietário ({manutencoes.length} atividades)
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Manutenções Programadas</CardTitle>
+              <CardDescription>
+                Cronograma extraído dos manuais do proprietário ({manutencoes.length} atividades)
+              </CardDescription>
+            </div>
+            {empreendimento && manutencoes.length > 0 && (
+              <ExportarCronogramaPDF manutencoes={manutencoes} empreendimento={empreendimento} />
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
