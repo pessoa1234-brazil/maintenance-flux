@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { empreendimentoSchema } from "@/lib/validation";
 
 interface FormularioEmpreendimentoProps {
   onSuccess?: () => void;
@@ -84,24 +85,35 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validate form data with zod
+      const validationResult = empreendimentoSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.format();
+        const firstError = Object.values(errors).find((err: any) => err._errors?.length > 0);
+        throw new Error((firstError as any)?._errors[0] || "Dados inválidos");
+      }
+
+      const validatedData = validationResult.data;
+
       // Inserir empreendimento
       const { data: empreendimento, error: insertError } = await supabase
         .from("empreendimentos")
         .insert({
           construtora_id: user.id,
-          nome: formData.nome,
-          endereco: formData.endereco,
-          cidade: formData.cidade,
-          estado: formData.estado,
-          cep: formData.cep,
-          area_terreno: formData.area_terreno ? parseFloat(formData.area_terreno) : null,
-          numero_andares: formData.numero_andares ? parseInt(formData.numero_andares) : null,
-          numero_elevadores: formData.numero_elevadores ? parseInt(formData.numero_elevadores) : null,
-          numero_apartamentos: formData.numero_apartamentos ? parseInt(formData.numero_apartamentos) : null,
-          area_media_apartamentos: formData.area_media_apartamentos ? parseFloat(formData.area_media_apartamentos) : null,
-          total_unidades: formData.total_unidades ? parseInt(formData.total_unidades) : 0,
-          data_entrega: formData.data_entrega,
-          data_habite_se: formData.data_habite_se || null,
+          nome: validatedData.nome,
+          endereco: validatedData.endereco,
+          cidade: validatedData.cidade,
+          estado: validatedData.estado,
+          cep: validatedData.cep,
+          area_terreno: validatedData.area_terreno ?? null,
+          numero_andares: validatedData.numero_andares ?? null,
+          numero_elevadores: validatedData.numero_elevadores ?? null,
+          numero_apartamentos: validatedData.numero_apartamentos ?? null,
+          area_media_apartamentos: validatedData.area_media_apartamentos ?? null,
+          total_unidades: validatedData.total_unidades,
+          data_entrega: validatedData.data_entrega,
+          data_habite_se: validatedData.data_habite_se || null,
         })
         .select()
         .single();

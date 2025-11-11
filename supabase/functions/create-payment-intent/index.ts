@@ -14,20 +14,52 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
+    // JWT is verified by Supabase automatically due to verify_jwt = true
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("Usuário não autenticado");
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user?.email) {
+      console.error("Auth error:", authError);
+      throw new Error("Usuário não autenticado");
+    }
+
+    console.log("Payment intent requested by user:", user.id);
 
     const { amount, description, os_id } = await req.json();
 
-    if (!amount || !description) {
-      throw new Error("Valor e descrição são obrigatórios");
+    // Input validation
+    if (!amount || typeof amount !== 'number' || amount <= 0 || amount > 1000000) {
+      throw new Error("Valor inválido");
+    }
+    if (!description || typeof description !== 'string' || description.trim().length === 0 || description.length > 500) {
+      throw new Error("Descrição inválida");
+    }
+    if (os_id && typeof os_id !== 'string') {
+      throw new Error("ID da OS inválido");
+    }
+    
+    // Authorization: verify user can create payment for this OS
+    if (os_id) {
+      const { data: os, error: osError } = await supabaseClient
+        .from("ordens_servico")
+        .select("solicitante_id")
+        .eq("id", os_id)
+        .single();
+      
+      if (osError || !os) {
+        console.error("OS not found:", osError);
+        throw new Error("Ordem de serviço não encontrada");
+      }
+      
+      if (os.solicitante_id !== user.id) {
+        console.error("Unauthorized payment attempt:", { userId: user.id, osId: os_id });
+        throw new Error("Você não tem permissão para criar pagamento para esta OS");
+      }
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {

@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { AlertCircle, Shield, Wrench, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ordemServicoSchema } from "@/lib/validation";
 
 interface GarantiaNBR {
   id: string;
@@ -84,6 +85,17 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validate form data
+      const validationResult = ordemServicoSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.format();
+        const firstError = Object.values(errors).find((err: any) => err._errors?.length > 0);
+        throw new Error((firstError as any)?._errors[0] || "Dados inválidos");
+      }
+
+      const validatedData = validationResult.data;
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("empreendimento_id, unidade_id")
@@ -100,10 +112,10 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
         : null;
 
       const { error } = await supabase.from("ordens_servico").insert({
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        tipo_servico: formData.tipo_servico as any,
-        sistema_predial: formData.sistema_predial || null,
+        titulo: validatedData.titulo,
+        descricao: validatedData.descricao,
+        tipo_servico: validatedData.tipo_servico as any,
+        sistema_predial: validatedData.sistema_predial || null,
         prazo_atendimento_dias: prazoCalculado,
         data_limite_atendimento: dataLimite,
         solicitante_id: user.id,
