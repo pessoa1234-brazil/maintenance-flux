@@ -10,6 +10,8 @@ import { ModalOS } from "@/components/modals/ModalOS";
 import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 type View = "dashboard" | "pipeline" | "ativos" | "relatorios";
 
@@ -101,6 +103,12 @@ const Index = () => {
     setActiveView("pipeline");
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+    toast.success("Logout realizado com sucesso!");
+  };
+
   const selectedOS = selectedOSId ? db.ordensServico[selectedOSId] : null;
   const selectedAtivo = selectedAtivoId ? db.ativos[selectedAtivoId] : null;
 
@@ -109,6 +117,12 @@ const Index = () => {
       <Sidebar activeView={activeView} onNavigate={(view) => setActiveView(view as View)} />
 
       <main className="ml-64 p-8">
+        <div className="flex justify-end mb-6">
+          <Button onClick={handleLogout} variant="outline" className="gap-2">
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
+        </div>
         {activeView === "dashboard" && <Dashboard db={db} />}
         {activeView === "pipeline" && <Pipeline db={db} onOpenOS={setSelectedOSId} />}
         {activeView === "ativos" && <Ativos db={db} onOpenAtivo={setSelectedAtivoId} />}
