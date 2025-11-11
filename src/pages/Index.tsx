@@ -12,7 +12,7 @@ import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 
 type View = "dashboard" | "pipeline" | "empreendimentos" | "ativos" | "relatorios";
 
@@ -118,7 +118,11 @@ const Index = () => {
       <Sidebar activeView={activeView} onNavigate={(view) => setActiveView(view as View)} />
 
       <main className="ml-64 p-8">
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end gap-2 mb-6">
+          <Button onClick={() => navigate("/vinculacao")} variant="outline" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            Vincular Empreendimento
+          </Button>
           <Button onClick={handleLogout} variant="outline" className="gap-2">
             <LogOut className="h-4 w-4" />
             Sair

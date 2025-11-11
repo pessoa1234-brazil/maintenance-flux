@@ -417,9 +417,11 @@ export type Database = {
           created_at: string
           document: string | null
           email: string
+          empreendimento_id: string | null
           full_name: string
           id: string
           phone: string | null
+          unidade_id: string | null
           updated_at: string
         }
         Insert: {
@@ -427,9 +429,11 @@ export type Database = {
           created_at?: string
           document?: string | null
           email: string
+          empreendimento_id?: string | null
           full_name: string
           id: string
           phone?: string | null
+          unidade_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -437,12 +441,29 @@ export type Database = {
           created_at?: string
           document?: string | null
           email?: string
+          empreendimento_id?: string | null
           full_name?: string
           id?: string
           phone?: string | null
+          unidade_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unidades: {
         Row: {
