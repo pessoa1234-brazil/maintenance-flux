@@ -145,11 +145,11 @@ const Auth = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 12 caracteres"
+                placeholder={isLogin ? "Digite sua senha" : "Mínimo 12 caracteres"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={12}
+                minLength={isLogin ? undefined : 12}
               />
               {!isLogin && (
                 <p className="text-xs text-muted-foreground">
