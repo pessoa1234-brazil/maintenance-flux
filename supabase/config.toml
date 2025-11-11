@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.processar-manual]
 verify_jwt = true
+
+[functions.buscar-manual]
+verify_jwt = true

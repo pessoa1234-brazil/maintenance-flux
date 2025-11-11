@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Building2, FileText, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EspecificacoesTecnicas } from "./EspecificacoesTecnicas";
+import { BuscaInteligenteManuais } from "./BuscaInteligenteManuais";
 
 interface EmpreendimentoDetalhado {
   id: string;
@@ -238,6 +239,8 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
         </TabsContent>
 
         <TabsContent value="manuais" className="space-y-6">
+          <BuscaInteligenteManuais empreendimentoId={id} />
+
           {empreendimento.manual_proprietario && (
             <Card>
               <CardHeader>
