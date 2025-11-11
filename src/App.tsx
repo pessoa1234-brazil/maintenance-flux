@@ -13,6 +13,10 @@ import Marketplace from "./pages/Marketplace";
 import Analytics from "./pages/Analytics";
 import BusinessIntelligence from "./pages/BusinessIntelligence";
 import Gamification from "./pages/Gamification";
+import Scheduling from "./pages/Scheduling";
+import CustomReports from "./pages/CustomReports";
+import SLA from "./pages/SLA";
+import Contracts from "./pages/Contracts";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
@@ -33,6 +37,10 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/bi" element={<BusinessIntelligence />} />
           <Route path="/gamificacao" element={<Gamification />} />
+          <Route path="/agendamento" element={<Scheduling />} />
+          <Route path="/relatorios-personalizados" element={<CustomReports />} />
+          <Route path="/sla" element={<SLA />} />
+          <Route path="/contratos" element={<Contracts />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

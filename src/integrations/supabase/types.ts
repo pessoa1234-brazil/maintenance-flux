@@ -14,6 +14,121 @@ export type Database = {
   }
   public: {
     Tables: {
+      agendamentos: {
+        Row: {
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          os_id: string | null
+          prestador_id: string
+          solicitante_id: string
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          os_id?: string | null
+          prestador_id: string
+          solicitante_id: string
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          os_id?: string | null
+          prestador_id?: string
+          solicitante_id?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_prestador_id_fkey"
+            columns: ["prestador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assinaturas_contrato: {
+        Row: {
+          assinante_id: string
+          assinatura_hash: string
+          contrato_id: string
+          created_at: string
+          id: string
+          ip_address: string
+          tipo_assinante: string
+          user_agent: string | null
+        }
+        Insert: {
+          assinante_id: string
+          assinatura_hash: string
+          contrato_id: string
+          created_at?: string
+          id?: string
+          ip_address: string
+          tipo_assinante: string
+          user_agent?: string | null
+        }
+        Update: {
+          assinante_id?: string
+          assinatura_hash?: string
+          contrato_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: string
+          tipo_assinante?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_contrato_assinante_id_fkey"
+            columns: ["assinante_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_contrato_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ativos: {
         Row: {
           created_at: string
@@ -151,6 +266,85 @@ export type Database = {
             columns: ["os_id"]
             isOneToOne: true
             referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos: {
+        Row: {
+          assinatura_prestador_data: string | null
+          assinatura_prestador_ip: string | null
+          assinatura_solicitante_data: string | null
+          assinatura_solicitante_ip: string | null
+          created_at: string
+          descricao: string
+          id: string
+          os_id: string | null
+          prazo_dias: number
+          prestador_id: string
+          solicitante_id: string
+          status: string
+          termos_condicoes: string
+          titulo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          assinatura_prestador_data?: string | null
+          assinatura_prestador_ip?: string | null
+          assinatura_solicitante_data?: string | null
+          assinatura_solicitante_ip?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          os_id?: string | null
+          prazo_dias: number
+          prestador_id: string
+          solicitante_id: string
+          status?: string
+          termos_condicoes: string
+          titulo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          assinatura_prestador_data?: string | null
+          assinatura_prestador_ip?: string | null
+          assinatura_solicitante_data?: string | null
+          assinatura_solicitante_ip?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          os_id?: string | null
+          prazo_dias?: number
+          prestador_id?: string
+          solicitante_id?: string
+          status?: string
+          termos_condicoes?: string
+          titulo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_prestador_id_fkey"
+            columns: ["prestador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -700,6 +894,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "relatorios_conformidade_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sla_configuracao: {
+        Row: {
+          alerta_percentual: number
+          created_at: string
+          empreendimento_id: string | null
+          id: string
+          prazo_conclusao_dias: number
+          prazo_resposta_horas: number
+          sistema_predial: string | null
+          tipo_servico: Database["public"]["Enums"]["tipo_servico"]
+        }
+        Insert: {
+          alerta_percentual?: number
+          created_at?: string
+          empreendimento_id?: string | null
+          id?: string
+          prazo_conclusao_dias: number
+          prazo_resposta_horas: number
+          sistema_predial?: string | null
+          tipo_servico: Database["public"]["Enums"]["tipo_servico"]
+        }
+        Update: {
+          alerta_percentual?: number
+          created_at?: string
+          empreendimento_id?: string | null
+          id?: string
+          prazo_conclusao_dias?: number
+          prazo_resposta_horas?: number
+          sistema_predial?: string | null
+          tipo_servico?: Database["public"]["Enums"]["tipo_servico"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_configuracao_empreendimento_id_fkey"
             columns: ["empreendimento_id"]
             isOneToOne: false
             referencedRelation: "empreendimentos"
