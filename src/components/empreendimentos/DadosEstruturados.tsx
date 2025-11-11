@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Database, FileText, Search, Filter, X } from "lucide-react";
+import { Loader2, Database, FileText, Search, Filter, X, Edit, History as HistoryIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { ModalEditarDado } from "./ModalEditarDado";
+import { HistoricoAlteracoes } from "./HistoricoAlteracoes";
 
 interface DadosEstruturadosProps {
   empreendimentoId: string;
@@ -33,6 +35,10 @@ export const DadosEstruturados = ({ empreendimentoId }: DadosEstruturadosProps) 
   const [textoBusca, setTextoBusca] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
   const [subcategoriaFiltro, setSubcategoriaFiltro] = useState<string>("todas");
+  const [dadoEditando, setDadoEditando] = useState<DadoEstruturado | null>(null);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [dadoHistorico, setDadoHistorico] = useState<string | null>(null);
+  const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -110,6 +116,20 @@ export const DadosEstruturados = ({ empreendimentoId }: DadosEstruturadosProps) 
     setTextoBusca("");
     setCategoriaFiltro("todas");
     setSubcategoriaFiltro("todas");
+  };
+
+  const abrirEdicao = (dado: DadoEstruturado) => {
+    setDadoEditando(dado);
+    setModalEditarAberto(true);
+  };
+
+  const abrirHistorico = (dadoId: string) => {
+    setDadoHistorico(dadoId);
+    setModalHistoricoAberto(true);
+  };
+
+  const handleSucessoEdicao = () => {
+    carregarDados(); // Recarregar dados após edição
   };
 
   const filtrosAtivos = [
@@ -357,6 +377,28 @@ export const DadosEstruturados = ({ empreendimentoId }: DadosEstruturadosProps) 
                                       </Badge>
                                     </div>
                                   </div>
+                                  
+                                  {/* Botões de ação */}
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => abrirHistorico(dado.id)}
+                                      title="Ver histórico de alterações"
+                                    >
+                                      <HistoryIcon className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => abrirEdicao(dado)}
+                                      title="Editar dado"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -371,6 +413,20 @@ export const DadosEstruturados = ({ empreendimentoId }: DadosEstruturadosProps) 
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Modais */}
+      <ModalEditarDado
+        dado={dadoEditando}
+        open={modalEditarAberto}
+        onOpenChange={setModalEditarAberto}
+        onSuccess={handleSucessoEdicao}
+      />
+
+      <HistoricoAlteracoes
+        dadoId={dadoHistorico}
+        open={modalHistoricoAberto}
+        onOpenChange={setModalHistoricoAberto}
+      />
     </div>
   );
 };

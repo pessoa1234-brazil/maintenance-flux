@@ -800,6 +800,47 @@ export type Database = {
           },
         ]
       }
+      manual_dados_historico: {
+        Row: {
+          campo_alterado: string
+          created_at: string
+          dado_id: string
+          id: string
+          motivo: string | null
+          user_id: string
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo_alterado: string
+          created_at?: string
+          dado_id: string
+          id?: string
+          motivo?: string | null
+          user_id: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo_alterado?: string
+          created_at?: string
+          dado_id?: string
+          id?: string
+          motivo?: string | null
+          user_id?: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_dados_historico_dado_id_fkey"
+            columns: ["dado_id"]
+            isOneToOne: false
+            referencedRelation: "manual_dados_estruturados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mensagens_chat: {
         Row: {
           created_at: string
