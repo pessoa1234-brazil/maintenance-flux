@@ -118,6 +118,74 @@ serve(async (req) => {
       }
     }
 
+    // Enviar emails para notificações
+    if (notificacoes.length > 0) {
+      const emailNotificacoes = notificacoes.map((notif) => ({
+        destinatario: notif.usuario_email,
+        nome: notif.usuario_nome || "Usuário",
+        assunto: `[${notif.urgencia.toUpperCase()}] ${notif.titulo}`,
+        mensagem: notif.mensagem,
+        urgencia: notif.urgencia,
+        tipo: "prazo" as const,
+      }));
+
+      try {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke(
+          "enviar-notificacoes-email",
+          {
+            body: { notificacoes: emailNotificacoes },
+          }
+        );
+
+        if (emailError) {
+          console.error("❌ Erro ao enviar emails:", emailError);
+        } else {
+          console.log("📧 Emails enviados:", emailData);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao chamar função de email:", error);
+      }
+    }
+
+    // Enviar emails para alertas de manutenção
+    if (alertasManutencao.length > 0) {
+      // Buscar responsáveis pelo empreendimento
+      for (const alerta of alertasManutencao) {
+        try {
+          const { data: responsaveis, error: respError } = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("empreendimento_id", alerta.empreendimento_id);
+
+          if (respError) throw respError;
+
+          if (responsaveis && responsaveis.length > 0) {
+            const emailNotificacoes = responsaveis.map((resp) => ({
+              destinatario: resp.email,
+              nome: resp.full_name,
+              assunto: "[MANUTENÇÃO PREVENTIVA] Ação Necessária",
+              mensagem: alerta.mensagem,
+              urgencia: alerta.urgencia,
+              tipo: "garantia" as const,
+            }));
+
+            const { error: emailError } = await supabase.functions.invoke(
+              "enviar-notificacoes-email",
+              {
+                body: { notificacoes: emailNotificacoes },
+              }
+            );
+
+            if (emailError) {
+              console.error("❌ Erro ao enviar emails de manutenção:", emailError);
+            }
+          }
+        } catch (error) {
+          console.error("❌ Erro ao processar alerta de manutenção:", error);
+        }
+      }
+    }
+
     const resultado = {
       timestamp: hoje.toISOString(),
       total_notificacoes: notificacoes.length,

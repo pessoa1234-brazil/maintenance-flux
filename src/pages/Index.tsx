@@ -6,6 +6,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { DashboardConstrutora } from "@/components/dashboards/DashboardConstrutora";
 import { DashboardCondominio } from "@/components/dashboards/DashboardCondominio";
 import { DashboardPrestador } from "@/components/dashboards/DashboardPrestador";
+import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { Pipeline } from "@/components/pipeline/Pipeline";
 import { Ativos } from "@/components/ativos/Ativos";
 import { Relatorios } from "@/components/relatorios/Relatorios";

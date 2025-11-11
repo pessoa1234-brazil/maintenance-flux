@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Vinculacao from "./pages/Vinculacao";
 import NovaOS from "./pages/NovaOS";
 import Relatorios from "./pages/Relatorios";
+import Marketplace from "./pages/Marketplace";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
