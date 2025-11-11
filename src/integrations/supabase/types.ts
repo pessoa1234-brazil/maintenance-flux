@@ -567,6 +567,47 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_buscas_manuais: {
+        Row: {
+          created_at: string
+          empreendimento_id: string
+          id: string
+          pergunta: string
+          referencias: string[] | null
+          resposta: string
+          tipo_manual: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_id: string
+          id?: string
+          pergunta: string
+          referencias?: string[] | null
+          resposta: string
+          tipo_manual?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_id?: string
+          id?: string
+          pergunta?: string
+          referencias?: string[] | null
+          resposta?: string
+          tipo_manual?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_buscas_manuais_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historico_pontos: {
         Row: {
           created_at: string
@@ -696,6 +737,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "manuais_conteudo_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_dados_estruturados: {
+        Row: {
+          categoria: string
+          chave: string
+          created_at: string
+          empreendimento_id: string
+          id: string
+          metadata: Json | null
+          pagina: number | null
+          secao: string | null
+          subcategoria: string | null
+          tipo_manual: string
+          unidade: string | null
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          categoria: string
+          chave: string
+          created_at?: string
+          empreendimento_id: string
+          id?: string
+          metadata?: Json | null
+          pagina?: number | null
+          secao?: string | null
+          subcategoria?: string | null
+          tipo_manual: string
+          unidade?: string | null
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          categoria?: string
+          chave?: string
+          created_at?: string
+          empreendimento_id?: string
+          id?: string
+          metadata?: Json | null
+          pagina?: number | null
+          secao?: string | null
+          subcategoria?: string | null
+          tipo_manual?: string
+          unidade?: string | null
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_dados_estruturados_empreendimento_id_fkey"
             columns: ["empreendimento_id"]
             isOneToOne: false
             referencedRelation: "empreendimentos"

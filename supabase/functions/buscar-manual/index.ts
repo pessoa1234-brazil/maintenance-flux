@@ -116,6 +116,40 @@ Responda em português do Brasil de forma profissional e objetiva.`;
 
     console.log("Resposta gerada com sucesso");
 
+    // Obter user_id do token JWT
+    const authHeader = req.headers.get("authorization");
+    let userId = null;
+    
+    if (authHeader) {
+      try {
+        const token = authHeader.replace("Bearer ", "");
+        const payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        userId = decodedPayload.sub;
+      } catch (e) {
+        console.log("Não foi possível extrair user_id do token");
+      }
+    }
+
+    // Salvar no histórico se user_id disponível
+    if (userId) {
+      try {
+        await supabase
+          .from("historico_buscas_manuais")
+          .insert({
+            empreendimento_id: empreendimentoId,
+            user_id: userId,
+            pergunta,
+            resposta,
+            tipo_manual: tipoManual,
+            referencias: manuais.map(m => m.tipo_manual)
+          });
+      } catch (histError) {
+        console.error("Erro ao salvar histórico:", histError);
+        // Não falha a requisição se houver erro no histórico
+      }
+    }
+
     return new Response(
       JSON.stringify({
         resposta,

@@ -7,6 +7,8 @@ import { ArrowLeft, Building2, FileText, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EspecificacoesTecnicas } from "./EspecificacoesTecnicas";
 import { BuscaInteligenteManuais } from "./BuscaInteligenteManuais";
+import { DocumentosManuais } from "./DocumentosManuais";
+import { DadosEstruturados } from "./DadosEstruturados";
 
 interface EmpreendimentoDetalhado {
   id: string;
@@ -26,6 +28,9 @@ interface EmpreendimentoDetalhado {
   manual_proprietario: string | null;
   manual_condominio: string | null;
   manual_usuario: string | null;
+  manual_proprietario_url: string | null;
+  manual_condominio_url: string | null;
+  manual_usuario_url: string | null;
 }
 
 interface DetalheEmpreendimentoProps {
@@ -112,15 +117,23 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
         <TabsList>
           <TabsTrigger value="geral" className="gap-2">
             <Building2 className="h-4 w-4" />
-            Informações Gerais
-          </TabsTrigger>
-          <TabsTrigger value="manuais" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Manuais
+            Geral
           </TabsTrigger>
           <TabsTrigger value="especificacoes" className="gap-2">
             <Search className="h-4 w-4" />
-            Especificações Técnicas
+            Especificações
+          </TabsTrigger>
+          <TabsTrigger value="manuais" className="gap-2">
+            <Search className="h-4 w-4" />
+            Busca IA
+          </TabsTrigger>
+          <TabsTrigger value="documentos" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Documentos
+          </TabsTrigger>
+          <TabsTrigger value="dados" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Dados Estruturados
           </TabsTrigger>
         </TabsList>
 
@@ -240,50 +253,18 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
 
         <TabsContent value="manuais" className="space-y-6">
           <BuscaInteligenteManuais empreendimentoId={id} />
+        </TabsContent>
 
-          {empreendimento.manual_proprietario && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Manual do Proprietário</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap">{empreendimento.manual_proprietario}</p>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="documentos" className="space-y-6">
+          <DocumentosManuais
+            manualProprietarioUrl={empreendimento.manual_proprietario_url || undefined}
+            manualCondominioUrl={empreendimento.manual_condominio_url || undefined}
+            manualUsuarioUrl={empreendimento.manual_usuario_url || undefined}
+          />
+        </TabsContent>
 
-          {empreendimento.manual_condominio && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Manual do Condomínio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap">{empreendimento.manual_condominio}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {empreendimento.manual_usuario && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Manual do Usuário</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap">{empreendimento.manual_usuario}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {!empreendimento.manual_proprietario &&
-            !empreendimento.manual_condominio &&
-            !empreendimento.manual_usuario && (
-              <Card>
-                <CardContent className="py-16 text-center">
-                  <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhum manual cadastrado</p>
-                </CardContent>
-              </Card>
-            )}
+        <TabsContent value="dados" className="space-y-6">
+          <DadosEstruturados empreendimentoId={id} />
         </TabsContent>
 
         <TabsContent value="especificacoes">
