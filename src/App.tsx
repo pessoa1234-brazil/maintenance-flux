@@ -21,6 +21,7 @@ import Contracts from "./pages/Contracts";
 import PrevisaoManutencao from "./pages/PrevisaoManutencao";
 import Admin from "./pages/Admin";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
+import CalendarioManutencoes from "./pages/CalendarioManutencoes";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/previsao-manutencao" element={<PrevisaoManutencao />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
+          <Route path="/calendario-manutencoes" element={<CalendarioManutencoes />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.buscar-manual]
 verify_jwt = true
+
+[functions.extrair-cronograma-manutencao]
+verify_jwt = true

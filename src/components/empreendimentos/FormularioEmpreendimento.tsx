@@ -342,51 +342,55 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 onChange={handleInputChange}
               />
             </div>
-            <div>
-              <Label htmlFor="numero_andares">Número de Andares</Label>
-              <Input
-                id="numero_andares"
-                name="numero_andares"
-                type="number"
-                value={formData.numero_andares}
-                onChange={handleInputChange}
-              />
-            </div>
+            {formData.tipo_empreendimento === "condominio" && (
+              <div>
+                <Label htmlFor="numero_andares">Número de Andares</Label>
+                <Input
+                  id="numero_andares"
+                  name="numero_andares"
+                  type="number"
+                  value={formData.numero_andares}
+                  onChange={handleInputChange}
+                />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="numero_elevadores">Elevadores</Label>
-              <Input
-                id="numero_elevadores"
-                name="numero_elevadores"
-                type="number"
-                value={formData.numero_elevadores}
-                onChange={handleInputChange}
-              />
+          {formData.tipo_empreendimento === "condominio" && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="numero_elevadores">Elevadores</Label>
+                <Input
+                  id="numero_elevadores"
+                  name="numero_elevadores"
+                  type="number"
+                  value={formData.numero_elevadores}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="numero_apartamentos">Apartamentos</Label>
+                <Input
+                  id="numero_apartamentos"
+                  name="numero_apartamentos"
+                  type="number"
+                  value={formData.numero_apartamentos}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="area_media_apartamentos">Área Média Apt. (m²)</Label>
+                <Input
+                  id="area_media_apartamentos"
+                  name="area_media_apartamentos"
+                  type="number"
+                  step="0.01"
+                  value={formData.area_media_apartamentos}
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="numero_apartamentos">Apartamentos</Label>
-              <Input
-                id="numero_apartamentos"
-                name="numero_apartamentos"
-                type="number"
-                value={formData.numero_apartamentos}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="area_media_apartamentos">Área Média Apt. (m²)</Label>
-              <Input
-                id="area_media_apartamentos"
-                name="area_media_apartamentos"
-                type="number"
-                step="0.01"
-                value={formData.area_media_apartamentos}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div>

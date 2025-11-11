@@ -15,7 +15,7 @@ import { ModalOS } from "@/components/modals/ModalOS";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { LogOut, Building2, Plus, FileText } from "lucide-react";
+import { LogOut, Building2, Plus, FileText, Calendar } from "lucide-react";
 import { ProfileMenu } from "@/components/profile/ProfileMenu";
 import { NotificationService } from "@/components/notifications/NotificationService";
 import { ManualChatWidget } from "@/components/chat/ManualChatWidget";
@@ -157,6 +157,10 @@ const Index = () => {
               <Button onClick={() => navigate("/nova-os")} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Nova OS
+              </Button>
+              <Button onClick={() => navigate("/calendario-manutencoes")} variant="outline" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Calendário
               </Button>
               <Button onClick={() => navigate("/relatorios")} variant="outline" className="gap-2">
                 <FileText className="h-4 w-4" />
