@@ -84,6 +84,19 @@ export const VinculacaoEmpreendimento = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Buscar dados do empreendimento e unidade para exibir na notificação
+      const { data: empData } = await supabase
+        .from("empreendimentos")
+        .select("nome, cidade, estado")
+        .eq("id", selectedEmpreendimento)
+        .single();
+
+      const { data: unidadeData } = await supabase
+        .from("unidades")
+        .select("numero, bloco")
+        .eq("id", selectedUnidade)
+        .single();
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -94,7 +107,19 @@ export const VinculacaoEmpreendimento = () => {
 
       if (error) throw error;
 
-      toast.success("Vinculação realizada com sucesso!");
+      // Notificação com detalhes completos
+      const unidadeInfo = unidadeData?.bloco 
+        ? `Unidade ${unidadeData.numero} - Bloco ${unidadeData.bloco}`
+        : `Unidade ${unidadeData?.numero}`;
+
+      toast.success(
+        `Vinculação confirmada com sucesso!\n\n` +
+        `📍 Empreendimento: ${empData?.nome}\n` +
+        `🏙️ Localização: ${empData?.cidade}, ${empData?.estado}\n` +
+        `🏠 ${unidadeInfo}`,
+        { duration: 5000 }
+      );
+
       setStep("confirmacao");
       carregarDadosUsuario();
     } catch (error: any) {

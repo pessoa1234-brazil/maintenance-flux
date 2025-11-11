@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, MapPin, Calendar } from "lucide-react";
+import { Building2, MapPin, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 interface Empreendimento {
   id: string;
@@ -25,25 +27,55 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [filteredEmps, setFilteredEmps] = useState<Empreendimento[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCidade, setFilterCidade] = useState<string>("all");
+  const [filterEstado, setFilterEstado] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     carregarEmpreendimentos();
   }, []);
 
   useEffect(() => {
+    let filtered = empreendimentos;
+
+    // Filtro de busca por nome
     if (searchTerm) {
-      const filtered = empreendimentos.filter(
-        (e) =>
-          e.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          e.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          e.estado.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((e) =>
+        e.nome.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredEmps(filtered);
-    } else {
-      setFilteredEmps(empreendimentos);
     }
-  }, [searchTerm, empreendimentos]);
+
+    // Filtro por cidade
+    if (filterCidade !== "all") {
+      filtered = filtered.filter((e) => e.cidade === filterCidade);
+    }
+
+    // Filtro por estado
+    if (filterEstado !== "all") {
+      filtered = filtered.filter((e) => e.estado === filterEstado);
+    }
+
+    setFilteredEmps(filtered);
+    setCurrentPage(1); // Reset para primeira página quando filtros mudam
+  }, [searchTerm, filterCidade, filterEstado, empreendimentos]);
+
+  // Extrair lista única de cidades e estados
+  const cidades = Array.from(new Set(empreendimentos.map((e) => e.cidade))).sort();
+  const estados = Array.from(new Set(empreendimentos.map((e) => e.estado))).sort();
+
+  // Calcular paginação
+  const totalPages = Math.ceil(filteredEmps.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentEmps = filteredEmps.slice(startIndex, endIndex);
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilterCidade("all");
+    setFilterEstado("all");
+  };
 
   const carregarEmpreendimentos = async () => {
     try {
@@ -72,14 +104,58 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="search">Buscar Empreendimento</Label>
-        <Input
-          id="search"
-          placeholder="Digite o nome, cidade ou estado..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="space-y-3">
+        <div>
+          <Label htmlFor="search">Buscar por Nome</Label>
+          <Input
+            id="search"
+            placeholder="Digite o nome do empreendimento..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="filter-estado">Filtrar por Estado</Label>
+            <Select value={filterEstado} onValueChange={setFilterEstado}>
+              <SelectTrigger id="filter-estado">
+                <SelectValue placeholder="Todos os estados" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os estados</SelectItem>
+                {estados.map((estado) => (
+                  <SelectItem key={estado} value={estado}>
+                    {estado}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="filter-cidade">Filtrar por Cidade</Label>
+            <Select value={filterCidade} onValueChange={setFilterCidade}>
+              <SelectTrigger id="filter-cidade">
+                <SelectValue placeholder="Todas as cidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as cidades</SelectItem>
+                {cidades.map((cidade) => (
+                  <SelectItem key={cidade} value={cidade}>
+                    {cidade}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {(searchTerm || filterCidade !== "all" || filterEstado !== "all") && (
+          <Button variant="outline" size="sm" onClick={handleClearFilters}>
+            Limpar Filtros
+          </Button>
+        )}
       </div>
 
       {filteredEmps.length === 0 ? (
@@ -92,8 +168,9 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
-          {filteredEmps.map((emp) => (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {currentEmps.map((emp) => (
             <Card
               key={emp.id}
               className={`cursor-pointer transition-all hover:shadow-lg ${
@@ -123,8 +200,37 @@ export const SelecionarEmpreendimento = ({ onSelect, selectedId }: SelecionarEmp
                 <Badge variant="secondary">{emp.total_unidades} unidades</Badge>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages} ({filteredEmps.length} empreendimentos)
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
