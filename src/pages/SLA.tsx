@@ -33,7 +33,7 @@ const SLA = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto py-8 px-4">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Voltar ao Dashboard
           </Button>

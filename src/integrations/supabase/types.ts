@@ -435,6 +435,7 @@ export type Database = {
           numero_andares: number | null
           numero_apartamentos: number | null
           numero_elevadores: number | null
+          tipo_empreendimento: string
           total_unidades: number
           updated_at: string
         }
@@ -460,6 +461,7 @@ export type Database = {
           numero_andares?: number | null
           numero_apartamentos?: number | null
           numero_elevadores?: number | null
+          tipo_empreendimento?: string
           total_unidades?: number
           updated_at?: string
         }
@@ -485,6 +487,7 @@ export type Database = {
           numero_andares?: number | null
           numero_apartamentos?: number | null
           numero_elevadores?: number | null
+          tipo_empreendimento?: string
           total_unidades?: number
           updated_at?: string
         }

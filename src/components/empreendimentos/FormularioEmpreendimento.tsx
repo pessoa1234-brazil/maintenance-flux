@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { empreendimentoSchema } from "@/lib/validation";
 
 interface FormularioEmpreendimentoProps {
@@ -28,6 +29,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
     cidade: initialData?.cidade || "",
     estado: initialData?.estado || "",
     cep: initialData?.cep || "",
+    tipo_empreendimento: initialData?.tipo_empreendimento || "condominio",
     area_terreno: initialData?.area_terreno?.toString() || "",
     numero_andares: initialData?.numero_andares?.toString() || "",
     numero_elevadores: initialData?.numero_elevadores?.toString() || "",
@@ -142,6 +144,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
           cidade: validatedData.cidade,
           estado: validatedData.estado,
           cep: validatedData.cep,
+          tipo_empreendimento: formData.tipo_empreendimento,
           area_terreno: validatedData.area_terreno ?? null,
           numero_andares: validatedData.numero_andares ?? null,
           numero_elevadores: validatedData.numero_elevadores ?? null,
@@ -296,6 +299,27 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 <p className="text-sm text-destructive mt-1">{fieldErrors.estado}</p>
               )}
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="tipo_empreendimento">Tipo de Empreendimento *</Label>
+            <Select
+              value={formData.tipo_empreendimento}
+              onValueChange={(value) => setFormData({ ...formData, tipo_empreendimento: value })}
+            >
+              <SelectTrigger id="tipo_empreendimento">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="condominio">Empreendimento - Condomínio</SelectItem>
+                <SelectItem value="nao_condominio">Empreendimento - Não Condominial</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-1">
+              {formData.tipo_empreendimento === "condominio" 
+                ? "Permite cadastramento de múltiplas unidades"
+                : "O próprio empreendimento funciona como unidade única"}
+            </p>
           </div>
         </CardContent>
       </Card>

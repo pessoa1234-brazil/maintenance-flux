@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { AlertCircle, Shield, Wrench, Plus } from "lucide-react";
+import { AlertCircle, Shield, Wrench, Plus, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ordemServicoSchema } from "@/lib/validation";
 
@@ -30,15 +30,19 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
   const [loading, setLoading] = useState(false);
   const [garantias, setGarantias] = useState<GarantiaNBR[]>([]);
   const [prazoCalculado, setPrazoCalculado] = useState<number | null>(null);
+  const [empreendimentos, setEmpreendimentos] = useState<any[]>([]);
+  const [fotosPatologia, setFotosPatologia] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
     tipo_servico: "servico_novo",
     sistema_predial: "",
+    empreendimento_id: "",
   });
 
   useEffect(() => {
     carregarGarantias();
+    carregarEmpreendimentos();
   }, []);
 
   useEffect(() => {
@@ -60,6 +64,34 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
       setGarantias(data || []);
     } catch (error) {
       console.error("Erro ao carregar garantias:", error);
+    }
+  };
+
+  const carregarEmpreendimentos = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("empreendimento_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.empreendimento_id) {
+        const { data, error } = await supabase
+          .from("empreendimentos")
+          .select("id, nome")
+          .eq("id", profile.empreendimento_id);
+
+        if (error) throw error;
+        setEmpreendimentos(data || []);
+        if (data && data.length > 0) {
+          setFormData(prev => ({ ...prev, empreendimento_id: data[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar empreendimentos:", error);
     }
   };
 
@@ -111,6 +143,28 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
         ? new Date(Date.now() + prazoCalculado * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
         : null;
 
+      // Upload de fotos de patologia
+      let fotosUrls: string[] = [];
+      if (fotosPatologia.length > 0) {
+        const uploadPromises = fotosPatologia.map(async (foto, index) => {
+          const fileExt = foto.name.split('.').pop();
+          const fileName = `os-patologia/${user.id}/${Date.now()}_${index}.${fileExt}`;
+          const { error: uploadError, data } = await supabase.storage
+            .from("empreendimentos")
+            .upload(fileName, foto);
+          
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("empreendimentos")
+            .getPublicUrl(fileName);
+          
+          return publicUrl;
+        });
+
+        fotosUrls = await Promise.all(uploadPromises);
+      }
+
       const { error } = await supabase.from("ordens_servico").insert({
         titulo: validatedData.titulo,
         descricao: validatedData.descricao,
@@ -122,6 +176,7 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
         unidade_id: profile.unidade_id,
         origem: "SISTEMA" as any,
         status: "A_FAZER" as any,
+        fotos_antes: fotosUrls.length > 0 ? fotosUrls : null,
       });
 
       if (error) throw error;
@@ -263,6 +318,27 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
           <CardTitle>Detalhes da Solicitação</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {empreendimentos.length > 0 && (
+            <div>
+              <Label htmlFor="empreendimento">Empreendimento *</Label>
+              <Select
+                value={formData.empreendimento_id}
+                onValueChange={(value) => setFormData({ ...formData, empreendimento_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o empreendimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empreendimentos.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="titulo">Título *</Label>
             <Input
@@ -284,6 +360,54 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
               rows={5}
               required
             />
+          </div>
+
+          <div>
+            <Label htmlFor="fotos_patologia">Fotos da Patologia</Label>
+            <div className="space-y-2">
+              <Label htmlFor="fotos_patologia" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary transition-colors">
+                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Clique para adicionar fotos da patologia
+                  </p>
+                </div>
+              </Label>
+              <Input
+                id="fotos_patologia"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const newFiles = Array.from(e.target.files);
+                    setFotosPatologia(prev => [...prev, ...newFiles]);
+                  }
+                }}
+                className="hidden"
+              />
+              
+              {fotosPatologia.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {fotosPatologia.map((foto, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(foto)}
+                        alt={`Foto ${index + 1}`}
+                        className="w-full h-24 object-cover rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFotosPatologia(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

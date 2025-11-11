@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarioManutencao } from "@/components/scheduling/CalendarioManutencao";
 import { Shield, AlertCircle, CheckCircle2, Clock, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -285,6 +286,8 @@ export const DashboardCondominio = () => {
           )}
         </CardContent>
       </Card>
+
+      <CalendarioManutencao />
     </div>
   );
 };
