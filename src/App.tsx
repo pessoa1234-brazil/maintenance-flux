@@ -10,6 +10,7 @@ import Vinculacao from "./pages/Vinculacao";
 import NovaOS from "./pages/NovaOS";
 import Relatorios from "./pages/Relatorios";
 import Marketplace from "./pages/Marketplace";
+import Analytics from "./pages/Analytics";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/nova-os" element={<NovaOS />} />
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
