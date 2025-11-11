@@ -241,6 +241,42 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          cor: string
+          created_at: string
+          criterio: string
+          descricao: string
+          icone: string
+          id: string
+          nome: string
+          pontos_necessarios: number | null
+          raridade: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          criterio: string
+          descricao: string
+          icone: string
+          id?: string
+          nome: string
+          pontos_necessarios?: number | null
+          raridade?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          criterio?: string
+          descricao?: string
+          icone?: string
+          id?: string
+          nome?: string
+          pontos_necessarios?: number | null
+          raridade?: string
+        }
+        Relationships: []
+      }
       checklists: {
         Row: {
           created_at: string
@@ -519,6 +555,48 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_pontos: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string
+          os_id: string | null
+          pontos: number
+          prestador_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo: string
+          os_id?: string | null
+          pontos: number
+          prestador_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string
+          os_id?: string | null
+          pontos?: number
+          prestador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_pontos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_pontos_prestador_id_fkey"
+            columns: ["prestador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       itens_checklist: {
         Row: {
           checklist_id: string
@@ -794,6 +872,86 @@ export type Database = {
           },
         ]
       }
+      prestador_badges: {
+        Row: {
+          badge_id: string
+          conquistado_em: string
+          id: string
+          prestador_id: string
+        }
+        Insert: {
+          badge_id: string
+          conquistado_em?: string
+          id?: string
+          prestador_id: string
+        }
+        Update: {
+          badge_id?: string
+          conquistado_em?: string
+          id?: string
+          prestador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prestador_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prestador_badges_prestador_id_fkey"
+            columns: ["prestador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prestador_pontos: {
+        Row: {
+          avaliacoes_5_estrelas: number
+          id: string
+          nivel: number
+          pontos_totais: number
+          prestador_id: string
+          servicos_completados: number
+          taxa_conclusao: number | null
+          tempo_resposta_medio_horas: number | null
+          updated_at: string
+        }
+        Insert: {
+          avaliacoes_5_estrelas?: number
+          id?: string
+          nivel?: number
+          pontos_totais?: number
+          prestador_id: string
+          servicos_completados?: number
+          taxa_conclusao?: number | null
+          tempo_resposta_medio_horas?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avaliacoes_5_estrelas?: number
+          id?: string
+          nivel?: number
+          pontos_totais?: number
+          prestador_id?: string
+          servicos_completados?: number
+          taxa_conclusao?: number | null
+          tempo_resposta_medio_horas?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prestador_pontos_prestador_id_fkey"
+            columns: ["prestador_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1006,6 +1164,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adicionar_pontos: {
+        Args: {
+          p_motivo: string
+          p_os_id?: string
+          p_pontos: number
+          p_prestador_id: string
+        }
+        Returns: undefined
+      }
+      calcular_nivel: { Args: { pontos: number }; Returns: number }
       calcular_prazo_atendimento: {
         Args: {
           p_sistema_predial: string
@@ -1020,6 +1188,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      verificar_badges: { Args: { p_prestador_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "construtora" | "condominio" | "prestador" | "cliente"
