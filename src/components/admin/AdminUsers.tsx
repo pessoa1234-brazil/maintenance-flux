@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Mail, Phone, Building } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Mail, Phone, Building, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface User {
@@ -24,6 +25,8 @@ export function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [ratingFilter, setRatingFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,16 +34,43 @@ export function AdminUsers() {
   }, []);
 
   useEffect(() => {
+    let filtered = users;
+
+    // Filtro por busca de texto
     if (searchTerm) {
-      const filtered = users.filter(user =>
+      filtered = filtered.filter(user =>
         user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(users);
     }
-  }, [searchTerm, users]);
+
+    // Filtro por role
+    if (roleFilter !== "all") {
+      filtered = filtered.filter(user =>
+        user.user_roles?.some(r => r.role === roleFilter)
+      );
+    }
+
+    // Filtro por avaliação
+    if (ratingFilter !== "all") {
+      filtered = filtered.filter(user => {
+        if (ratingFilter === "5-stars") return user.nota_media >= 4.5;
+        if (ratingFilter === "4-stars") return user.nota_media >= 4 && user.nota_media < 4.5;
+        if (ratingFilter === "3-stars") return user.nota_media >= 3 && user.nota_media < 4;
+        if (ratingFilter === "below-3") return user.nota_media < 3 && user.total_avaliacoes > 0;
+        if (ratingFilter === "no-rating") return user.total_avaliacoes === 0;
+        return true;
+      });
+    }
+
+    setFilteredUsers(filtered);
+  }, [searchTerm, roleFilter, ratingFilter, users]);
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setRoleFilter("all");
+    setRatingFilter("all");
+  };
 
   const loadUsers = async () => {
     try {
@@ -107,13 +137,53 @@ export function AdminUsers() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="construtora">Construtora</SelectItem>
+                  <SelectItem value="prestador">Prestador</SelectItem>
+                  <SelectItem value="condominio">Condomínio</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filtrar por avaliação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as avaliações</SelectItem>
+                  <SelectItem value="5-stars">⭐ 4.5+ estrelas</SelectItem>
+                  <SelectItem value="4-stars">⭐ 4.0 - 4.4 estrelas</SelectItem>
+                  <SelectItem value="3-stars">⭐ 3.0 - 3.9 estrelas</SelectItem>
+                  <SelectItem value="below-3">⭐ Abaixo de 3.0</SelectItem>
+                  <SelectItem value="no-rating">Sem avaliações</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {(roleFilter !== "all" || ratingFilter !== "all" || searchTerm) && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">

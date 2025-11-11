@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Calendar, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, MapPin, Calendar, Users, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Empreendimento {
@@ -23,11 +25,36 @@ interface Empreendimento {
 
 export function AdminEmpreendimentos() {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
+  const [filteredEmpreendimentos, setFilteredEmpreendimentos] = useState<Empreendimento[]>([]);
+  const [cidadeFilter, setCidadeFilter] = useState<string>("all");
+  const [estadoFilter, setEstadoFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  
+  const cidades = Array.from(new Set(empreendimentos.map(e => e.cidade))).sort();
+  const estados = Array.from(new Set(empreendimentos.map(e => e.estado))).sort();
 
   useEffect(() => {
     loadEmpreendimentos();
   }, []);
+
+  useEffect(() => {
+    let filtered = empreendimentos;
+
+    if (cidadeFilter !== "all") {
+      filtered = filtered.filter(e => e.cidade === cidadeFilter);
+    }
+
+    if (estadoFilter !== "all") {
+      filtered = filtered.filter(e => e.estado === estadoFilter);
+    }
+
+    setFilteredEmpreendimentos(filtered);
+  }, [cidadeFilter, estadoFilter, empreendimentos]);
+
+  const clearFilters = () => {
+    setCidadeFilter("all");
+    setEstadoFilter("all");
+  };
 
   const loadEmpreendimentos = async () => {
     try {
@@ -69,6 +96,7 @@ export function AdminEmpreendimentos() {
       );
 
       setEmpreendimentos(enrichedData as any);
+      setFilteredEmpreendimentos(enrichedData as any);
     } catch (error) {
       console.error('Erro ao carregar empreendimentos:', error);
       toast.error("Erro ao carregar empreendimentos");
@@ -87,12 +115,47 @@ export function AdminEmpreendimentos() {
         <CardHeader>
           <CardTitle>Empreendimentos Cadastrados</CardTitle>
           <CardDescription>
-            {empreendimentos.length} projetos na plataforma
+            {filteredEmpreendimentos.length} de {empreendimentos.length} projetos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            
+            <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os estados</SelectItem>
+                {estados.map(estado => (
+                  <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={cidadeFilter} onValueChange={setCidadeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Cidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as cidades</SelectItem>
+                {cidades.map(cidade => (
+                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(cidadeFilter !== "all" || estadoFilter !== "all") && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {empreendimentos.map((emp) => (
+            {filteredEmpreendimentos.map((emp) => (
               <Card key={emp.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
