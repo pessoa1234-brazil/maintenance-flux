@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.previsao-manutencao]
 verify_jwt = true
+
+[functions.processar-manual]
+verify_jwt = true

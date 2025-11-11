@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,9 @@ interface FormularioEmpreendimentoProps {
 export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpreendimentoProps) => {
   const [loading, setLoading] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
+  const [manualProprietario, setManualProprietario] = useState<File | null>(null);
+  const [manualCondominio, setManualCondominio] = useState<File | null>(null);
+  const [manualUsuario, setManualUsuario] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     endereco: "",
@@ -30,12 +32,9 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
     total_unidades: "",
     data_entrega: "",
     data_habite_se: "",
-    manual_proprietario: "",
-    manual_condominio: "",
-    manual_usuario: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -49,6 +48,32 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
 
   const removePhoto = (index: number) => {
     setFotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadManual = async (file: File, tipo: string, empreendimentoId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${empreendimentoId}/${tipo}.${fileExt}`;
+    
+    const { error: uploadError, data } = await supabase.storage
+      .from("manuais")
+      .upload(fileName, file);
+    
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("manuais")
+      .getPublicUrl(fileName);
+
+    // Processar documento com IA
+    await supabase.functions.invoke('processar-manual', {
+      body: {
+        empreendimentoId,
+        tipoManual: tipo,
+        arquivoUrl: publicUrl
+      }
+    });
+
+    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,17 +102,42 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
           total_unidades: formData.total_unidades ? parseInt(formData.total_unidades) : 0,
           data_entrega: formData.data_entrega,
           data_habite_se: formData.data_habite_se || null,
-          manual_proprietario: formData.manual_proprietario || null,
-          manual_condominio: formData.manual_condominio || null,
-          manual_usuario: formData.manual_usuario || null,
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
+      // Upload de manuais
+      const manualUrls: any = {};
+      
+      if (manualProprietario) {
+        toast.info("Processando Manual do Proprietário...");
+        manualUrls.manual_proprietario_url = await uploadManual(manualProprietario, 'proprietario', empreendimento.id);
+      }
+      
+      if (manualCondominio) {
+        toast.info("Processando Manual do Condomínio...");
+        manualUrls.manual_condominio_url = await uploadManual(manualCondominio, 'condominio', empreendimento.id);
+      }
+      
+      if (manualUsuario) {
+        toast.info("Processando Manual do Usuário...");
+        manualUrls.manual_usuario_url = await uploadManual(manualUsuario, 'usuario', empreendimento.id);
+      }
+
+      // Atualizar empreendimento com URLs dos manuais
+      if (Object.keys(manualUrls).length > 0) {
+        const { error: updateError } = await supabase
+          .from("empreendimentos")
+          .update(manualUrls)
+          .eq('id', empreendimento.id);
+
+        if (updateError) throw updateError;
+      }
+
       // Upload de fotos
-      if (fotos.length > 0 && empreendimento) {
+      if (fotos.length > 0) {
         const uploadPromises = fotos.map(async (foto, index) => {
           const fileExt = foto.name.split('.').pop();
           const fileName = `${empreendimento.id}/${Date.now()}_${index}.${fileExt}`;
@@ -101,7 +151,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
         await Promise.all(uploadPromises);
       }
 
-      toast.success("Empreendimento cadastrado com sucesso!");
+      toast.success("Empreendimento cadastrado com sucesso! Os manuais estão sendo processados pela IA.");
       onSuccess?.();
     } catch (error: any) {
       console.error("Erro ao cadastrar empreendimento:", error);
@@ -282,43 +332,55 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
       <Card>
         <CardHeader>
           <CardTitle>Manuais</CardTitle>
-          <CardDescription>Informações dos manuais do empreendimento</CardDescription>
+          <CardDescription>Upload de arquivos PDF ou Word dos manuais (serão processados por IA)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="manual_proprietario">Manual do Proprietário</Label>
-            <Textarea
+            <Input
               id="manual_proprietario"
-              name="manual_proprietario"
-              value={formData.manual_proprietario}
-              onChange={handleInputChange}
-              placeholder="Informações principais do manual do proprietário"
-              rows={3}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => setManualProprietario(e.target.files?.[0] || null)}
+              className="cursor-pointer"
             />
+            {manualProprietario && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Arquivo selecionado: {manualProprietario.name}
+              </p>
+            )}
           </div>
 
           <div>
             <Label htmlFor="manual_condominio">Manual do Condomínio</Label>
-            <Textarea
+            <Input
               id="manual_condominio"
-              name="manual_condominio"
-              value={formData.manual_condominio}
-              onChange={handleInputChange}
-              placeholder="Informações principais do manual do condomínio"
-              rows={3}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => setManualCondominio(e.target.files?.[0] || null)}
+              className="cursor-pointer"
             />
+            {manualCondominio && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Arquivo selecionado: {manualCondominio.name}
+              </p>
+            )}
           </div>
 
           <div>
             <Label htmlFor="manual_usuario">Manual do Usuário</Label>
-            <Textarea
+            <Input
               id="manual_usuario"
-              name="manual_usuario"
-              value={formData.manual_usuario}
-              onChange={handleInputChange}
-              placeholder="Informações principais do manual do usuário"
-              rows={3}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => setManualUsuario(e.target.files?.[0] || null)}
+              className="cursor-pointer"
             />
+            {manualUsuario && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Arquivo selecionado: {manualUsuario.name}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

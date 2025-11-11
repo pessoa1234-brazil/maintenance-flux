@@ -426,8 +426,11 @@ export type Database = {
           estado: string
           id: string
           manual_condominio: string | null
+          manual_condominio_url: string | null
           manual_proprietario: string | null
+          manual_proprietario_url: string | null
           manual_usuario: string | null
+          manual_usuario_url: string | null
           nome: string
           numero_andares: number | null
           numero_apartamentos: number | null
@@ -448,8 +451,11 @@ export type Database = {
           estado: string
           id?: string
           manual_condominio?: string | null
+          manual_condominio_url?: string | null
           manual_proprietario?: string | null
+          manual_proprietario_url?: string | null
           manual_usuario?: string | null
+          manual_usuario_url?: string | null
           nome: string
           numero_andares?: number | null
           numero_apartamentos?: number | null
@@ -470,8 +476,11 @@ export type Database = {
           estado?: string
           id?: string
           manual_condominio?: string | null
+          manual_condominio_url?: string | null
           manual_proprietario?: string | null
+          manual_proprietario_url?: string | null
           manual_usuario?: string | null
+          manual_usuario_url?: string | null
           nome?: string
           numero_andares?: number | null
           numero_apartamentos?: number | null
@@ -646,6 +655,50 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manuais_conteudo: {
+        Row: {
+          arquivo_url: string
+          conteudo_extraido: string | null
+          created_at: string | null
+          empreendimento_id: string
+          erro_mensagem: string | null
+          id: string
+          status: string | null
+          tipo_manual: string
+          updated_at: string | null
+        }
+        Insert: {
+          arquivo_url: string
+          conteudo_extraido?: string | null
+          created_at?: string | null
+          empreendimento_id: string
+          erro_mensagem?: string | null
+          id?: string
+          status?: string | null
+          tipo_manual: string
+          updated_at?: string | null
+        }
+        Update: {
+          arquivo_url?: string
+          conteudo_extraido?: string | null
+          created_at?: string | null
+          empreendimento_id?: string
+          erro_mensagem?: string | null
+          id?: string
+          status?: string | null
+          tipo_manual?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manuais_conteudo_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
             referencedColumns: ["id"]
           },
         ]
