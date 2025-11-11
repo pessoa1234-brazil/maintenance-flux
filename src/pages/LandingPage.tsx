@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Clock, FileText, Award, BarChart, Users, Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Shield, Clock, FileText, Award, BarChart, Users, Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Play, CheckCircle, AlertCircle, HelpCircle } from "lucide-react";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -54,6 +55,56 @@ const LandingPage = () => {
       nome: "Carlos Oliveira",
       cargo: "Prestador de Serviços - Engenharia Predial",
       texto: "O marketplace me conectou com dezenas de novos clientes. A gamificação incentiva a qualidade e profissionalismo."
+    }
+  ];
+
+  const faqItems = [
+    {
+      pergunta: "Como funciona a gestão de garantias ABNT?",
+      resposta: "O sistema rastreia automaticamente todas as garantias conforme ABNT NBR 17170:2022, calculando prazos a partir da data de entrega do empreendimento. Você recebe alertas antes do vencimento e mantém histórico completo de todas as solicitações."
+    },
+    {
+      pergunta: "Quanto tempo leva para implementar a plataforma?",
+      resposta: "A implementação é imediata. Após o cadastro, você já pode começar a cadastrar empreendimentos, vincular usuários e criar ordens de serviço. Oferecemos suporte completo para migração de dados existentes."
+    },
+    {
+      pergunta: "Como funcionam os pagamentos e comissões?",
+      resposta: "A plataforma processa pagamentos de forma segura via integração com Stripe/Mercado Pago. As comissões são distribuídas automaticamente entre as partes conforme acordado, com transparência total no processo."
+    },
+    {
+      pergunta: "Prestadores de serviço precisam pagar para usar?",
+      resposta: "Prestadores pagam apenas uma comissão sobre serviços executados através da plataforma. Não há mensalidade fixa. Quanto melhor sua avaliação e ranking, mais oportunidades você recebe."
+    },
+    {
+      pergunta: "A plataforma emite relatórios de conformidade?",
+      resposta: "Sim! Geramos relatórios completos de conformidade ABNT NBR 5674 demonstrando que a manutenção preventiva está sendo seguida. Esses relatórios são essenciais para manter a validade das garantias."
+    },
+    {
+      pergunta: "Como funciona o sistema de avaliação de prestadores?",
+      resposta: "Após cada serviço concluído, clientes avaliam prestadores com notas e comentários. Essas avaliações formam o ranking público que ajuda outros usuários a escolher os melhores profissionais."
+    }
+  ];
+
+  const tourSteps = [
+    {
+      icon: CheckCircle,
+      title: "Cadastre Empreendimentos",
+      description: "Registre projetos com especificações técnicas, manuais e documentação completa"
+    },
+    {
+      icon: AlertCircle,
+      title: "Receba Alertas Automáticos",
+      description: "Sistema monitora prazos de garantia e manutenções preventivas, alertando proativamente"
+    },
+    {
+      icon: Users,
+      title: "Conecte com Prestadores",
+      description: "Marketplace com prestadores qualificados prontos para atender suas demandas"
+    },
+    {
+      icon: BarChart,
+      title: "Analise Performance",
+      description: "Dashboards com métricas de custos, prazos e eficiência operacional"
     }
   ];
 
@@ -113,15 +164,57 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Depoimentos */}
+      {/* Vídeo Demo / Tour Interativo */}
       <section className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <h3 className="text-3xl md:text-4xl font-bold text-center mb-6 text-foreground">
+            Veja como funciona
+          </h3>
+          <p className="text-center text-muted-foreground mb-12 text-lg max-w-2xl mx-auto">
+            Conheça os principais recursos da plataforma e como ela pode transformar sua gestão de manutenção
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-8 items-center mb-12">
+            {/* Vídeo Placeholder */}
+            <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border shadow-lg hover-scale">
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/90 hover:bg-primary transition-colors cursor-pointer mb-4">
+                    <Play className="h-10 w-10 text-primary-foreground ml-1" />
+                  </div>
+                  <p className="text-foreground font-semibold text-lg">Assistir Demo (3 min)</p>
+                  <p className="text-muted-foreground text-sm mt-2">Demonstração completa da plataforma</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tour Steps */}
+            <div className="space-y-4">
+              {tourSteps.map((step, index) => (
+                <div key={index} className="flex gap-4 items-start p-4 rounded-lg bg-card border border-border hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <step.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-1">{step.title}</h4>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Depoimentos */}
+      <section className="py-20 px-4 bg-background">
         <div className="container mx-auto">
           <h3 className="text-3xl md:text-4xl font-bold text-center mb-12 text-foreground">
             O que nossos clientes dizem
           </h3>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {depoimentos.map((depoimento, index) => (
-              <Card key={index} className="border-border">
+              <Card key={index} className="border-border hover-scale">
                 <CardContent className="p-6">
                   <p className="text-muted-foreground italic mb-4">"{depoimento.texto}"</p>
                   <div className="border-t pt-4">
@@ -131,6 +224,41 @@ const LandingPage = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <HelpCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h3 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+              Perguntas Frequentes
+            </h3>
+            <p className="text-muted-foreground text-lg">
+              Tire suas dúvidas sobre a plataforma
+            </p>
+          </div>
+          
+          <Accordion type="single" collapsible className="space-y-4">
+            {faqItems.map((item, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="bg-card border border-border rounded-lg px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-4">
+                  <span className="font-semibold text-foreground">{item.pergunta}</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-4">
+                  {item.resposta}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground mb-4">Ainda tem dúvidas?</p>
+            <Button onClick={() => navigate("/auth")} variant="outline" size="lg">
+              Fale com Nossa Equipe
+            </Button>
           </div>
         </div>
       </section>
