@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarioManutencao } from "@/components/scheduling/CalendarioManutencao";
+import { ListaManutencoesExtraidas } from "@/components/scheduling/ListaManutencoesExtraidas";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,6 +173,12 @@ const CalendarioManutencoes = () => {
           )}
 
           {empreendimento && <CalendarioManutencao />}
+
+          {empreendimento && (
+            <div className="mt-6">
+              <ListaManutencoesExtraidas />
+            </div>
+          )}
         </div>
       </div>
     </div>

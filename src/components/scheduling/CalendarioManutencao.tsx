@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Wrench, Shield, AlertCircle } from "lucide-react";
+import { Wrench, Shield, AlertCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { ModalAgendamento } from "./ModalAgendamento";
 
 interface ManutencaoAgendada {
   id: string;
@@ -20,6 +22,7 @@ export const CalendarioManutencao = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [manutencoes, setManutencoes] = useState<ManutencaoAgendada[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModalAgendamento, setShowModalAgendamento] = useState(false);
 
   useEffect(() => {
     carregarManutencoes();
@@ -54,9 +57,29 @@ export const CalendarioManutencao = () => {
 
       if (!garantias) return;
 
+      // Carregar agendamentos existentes
+      const { data: agendamentos } = await supabase
+        .from("agendamentos")
+        .select("*")
+        .eq("solicitante_id", user.id)
+        .gte("data_inicio", new Date().toISOString());
+
       const dataBase = new Date(empreendimento.data_habite_se || empreendimento.data_entrega);
       const hoje = new Date();
       const manutencoesList: ManutencaoAgendada[] = [];
+
+      // Adicionar agendamentos existentes
+      if (agendamentos) {
+        agendamentos.forEach((agendamento) => {
+          manutencoesList.push({
+            id: agendamento.id,
+            data: new Date(agendamento.data_inicio),
+            titulo: agendamento.titulo,
+            tipo: "manutencao_preventiva",
+            descricao: agendamento.descricao || "",
+          });
+        });
+      }
 
       // Gerar alertas de garantias
       garantias.forEach((garantia) => {
@@ -115,6 +138,22 @@ export const CalendarioManutencao = () => {
 
   const diasComManutencao = manutencoes.map((m) => m.data);
 
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+  };
+
+  const handleNovoAgendamento = () => {
+    if (!selectedDate) {
+      toast.error("Selecione uma data no calendário");
+      return;
+    }
+    setShowModalAgendamento(true);
+  };
+
+  const handleAgendamentoSuccess = () => {
+    carregarManutencoes();
+  };
+
   const getIconByType = (tipo: string) => {
     switch (tipo) {
       case "manutencao_preventiva":
@@ -164,7 +203,7 @@ export const CalendarioManutencao = () => {
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={setSelectedDate}
+            onSelect={handleDateSelect}
             className="rounded-md border"
             modifiers={{
               manutencao: diasComManutencao,
@@ -181,17 +220,25 @@ export const CalendarioManutencao = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            {selectedDate ? selectedDate.toLocaleDateString("pt-BR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }) : "Selecione uma data"}
-          </CardTitle>
-          <CardDescription>
-            {manutencoesDoDia.length} atividade(s) programada(s)
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>
+                {selectedDate ? selectedDate.toLocaleDateString("pt-BR", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }) : "Selecione uma data"}
+              </CardTitle>
+              <CardDescription>
+                {manutencoesDoDia.length} atividade(s) programada(s)
+              </CardDescription>
+            </div>
+            <Button onClick={handleNovoAgendamento} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Agendar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[400px] pr-4">
@@ -239,6 +286,13 @@ export const CalendarioManutencao = () => {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <ModalAgendamento
+        isOpen={showModalAgendamento}
+        onClose={() => setShowModalAgendamento(false)}
+        dataSelecionada={selectedDate || new Date()}
+        onSuccess={handleAgendamentoSuccess}
+      />
     </div>
   );
 };
