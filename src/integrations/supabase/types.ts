@@ -85,6 +85,47 @@ export type Database = {
           },
         ]
       }
+      avaliacoes: {
+        Row: {
+          avaliador_id: string
+          comentario: string | null
+          created_at: string
+          id: string
+          nota: number
+          os_id: string
+          prestador_id: string
+          updated_at: string
+        }
+        Insert: {
+          avaliador_id: string
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nota: number
+          os_id: string
+          prestador_id: string
+          updated_at?: string
+        }
+        Update: {
+          avaliador_id?: string
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nota?: number
+          os_id?: string
+          prestador_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklists: {
         Row: {
           created_at: string
@@ -334,6 +375,44 @@ export type Database = {
           },
         ]
       }
+      mensagens_chat: {
+        Row: {
+          created_at: string
+          destinatario_id: string
+          id: string
+          lida: boolean
+          mensagem: string
+          os_id: string
+          remetente_id: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_id: string
+          id?: string
+          lida?: boolean
+          mensagem: string
+          os_id: string
+          remetente_id: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_id?: string
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          os_id?: string
+          remetente_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_chat_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orcamentos: {
         Row: {
           created_at: string
@@ -397,6 +476,8 @@ export type Database = {
           sistema_predial: string | null
           solicitante_id: string
           status: Database["public"]["Enums"]["status_os"]
+          tempo_conclusao_dias: number | null
+          tempo_resposta_horas: number | null
           tipo_servico: Database["public"]["Enums"]["tipo_servico"] | null
           titulo: string
           unidade_id: string
@@ -421,6 +502,8 @@ export type Database = {
           sistema_predial?: string | null
           solicitante_id: string
           status?: Database["public"]["Enums"]["status_os"]
+          tempo_conclusao_dias?: number | null
+          tempo_resposta_horas?: number | null
           tipo_servico?: Database["public"]["Enums"]["tipo_servico"] | null
           titulo: string
           unidade_id: string
@@ -445,6 +528,8 @@ export type Database = {
           sistema_predial?: string | null
           solicitante_id?: string
           status?: Database["public"]["Enums"]["status_os"]
+          tempo_conclusao_dias?: number | null
+          tempo_resposta_horas?: number | null
           tipo_servico?: Database["public"]["Enums"]["tipo_servico"] | null
           titulo?: string
           unidade_id?: string
@@ -524,7 +609,9 @@ export type Database = {
           empreendimento_id: string | null
           full_name: string
           id: string
+          nota_media: number | null
           phone: string | null
+          total_avaliacoes: number | null
           unidade_id: string | null
           updated_at: string
         }
@@ -536,7 +623,9 @@ export type Database = {
           empreendimento_id?: string | null
           full_name: string
           id: string
+          nota_media?: number | null
           phone?: string | null
+          total_avaliacoes?: number | null
           unidade_id?: string | null
           updated_at?: string
         }
@@ -548,7 +637,9 @@ export type Database = {
           empreendimento_id?: string | null
           full_name?: string
           id?: string
+          nota_media?: number | null
           phone?: string | null
+          total_avaliacoes?: number | null
           unidade_id?: string | null
           updated_at?: string
         }
