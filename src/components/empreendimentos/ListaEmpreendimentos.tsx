@@ -2,8 +2,19 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, Plus, Copy } from "lucide-react";
+import { Building2, MapPin, Calendar, Plus, Copy, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Empreendimento {
   id: string;
@@ -26,6 +37,8 @@ interface ListaEmpreendimentosProps {
 export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplicar }: ListaEmpreendimentosProps) => {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [empreendimentoToDelete, setEmpreendimentoToDelete] = useState<Empreendimento | null>(null);
 
   useEffect(() => {
     carregarEmpreendimentos();
@@ -44,6 +57,33 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplica
       console.error("Erro ao carregar empreendimentos:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (emp: Empreendimento) => {
+    setEmpreendimentoToDelete(emp);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!empreendimentoToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("empreendimentos")
+        .delete()
+        .eq("id", empreendimentoToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Empreendimento excluído com sucesso!");
+      carregarEmpreendimentos();
+    } catch (error) {
+      console.error("Erro ao excluir empreendimento:", error);
+      toast.error("Erro ao excluir empreendimento. Verifique se não há dados vinculados.");
+    } finally {
+      setDeleteDialogOpen(false);
+      setEmpreendimentoToDelete(null);
     }
   };
 
@@ -128,18 +168,29 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplica
                   </p>
                 </div>
 
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full gap-2"
+                    className="flex-1 gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDuplicar(emp);
                     }}
                   >
                     <Copy className="h-4 w-4" />
-                    Duplicar Empreendimento
+                    Duplicar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(emp);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -147,6 +198,26 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplica
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o empreendimento{" "}
+              <span className="font-semibold">{empreendimentoToDelete?.nome}</span>?
+              <br />
+              Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
