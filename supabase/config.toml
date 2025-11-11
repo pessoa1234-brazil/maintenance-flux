@@ -1,1 +1,7 @@
 project_id = "mfayoazhicnsvgqflfmh"
+
+[functions.create-payment-intent]
+verify_jwt = false
+
+[functions.previsao-manutencao]
+verify_jwt = true

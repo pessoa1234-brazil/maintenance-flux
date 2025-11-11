@@ -17,6 +17,7 @@ import Scheduling from "./pages/Scheduling";
 import CustomReports from "./pages/CustomReports";
 import SLA from "./pages/SLA";
 import Contracts from "./pages/Contracts";
+import PrevisaoManutencao from "./pages/PrevisaoManutencao";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/relatorios-personalizados" element={<CustomReports />} />
           <Route path="/sla" element={<SLA />} />
           <Route path="/contratos" element={<Contracts />} />
+          <Route path="/previsao-manutencao" element={<PrevisaoManutencao />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { FileText, Check, X, Clock } from "lucide-react";
+import { FileText, Check, X, Clock, Download } from "lucide-react";
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 interface Contrato {
   id: string;
@@ -99,6 +100,115 @@ export const ContratosDigitais = () => {
       toast.error("Erro ao criar contrato");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const gerarPDFContrato = async (contrato: Contrato) => {
+    try {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([595.28, 841.89]);
+      const { width, height } = page.getSize();
+      
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      
+      let yPosition = height - 50;
+      
+      page.drawText('CONTRATO DE PRESTAÇÃO DE SERVIÇOS', {
+        x: 50,
+        y: yPosition,
+        size: 16,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      });
+      
+      yPosition -= 40;
+      
+      page.drawText(`Título: ${contrato.titulo}`, {
+        x: 50,
+        y: yPosition,
+        size: 12,
+        font: fontBold,
+      });
+      
+      yPosition -= 25;
+      page.drawText(`Valor: R$ ${Number(contrato.valor).toFixed(2)}`, {
+        x: 50,
+        y: yPosition,
+        size: 11,
+        font,
+      });
+      
+      yPosition -= 20;
+      page.drawText(`Prazo: ${contrato.prazo_dias} dias`, {
+        x: 50,
+        y: yPosition,
+        size: 11,
+        font,
+      });
+      
+      yPosition -= 30;
+      page.drawText('Descrição:', {
+        x: 50,
+        y: yPosition,
+        size: 11,
+        font: fontBold,
+      });
+      
+      yPosition -= 20;
+      if (contrato.descricao) {
+        const descricaoLines = contrato.descricao.match(/.{1,80}/g) || [];
+        descricaoLines.forEach((line: string) => {
+          page.drawText(line, { x: 50, y: yPosition, size: 10, font });
+          yPosition -= 15;
+        });
+      }
+      
+      yPosition -= 40;
+      if (contrato.assinatura_solicitante_data) {
+        page.drawText('_____________________________', { x: 50, y: yPosition, size: 10, font });
+        yPosition -= 15;
+        page.drawText(`Solicitante - ${new Date(contrato.assinatura_solicitante_data).toLocaleString('pt-BR')}`, {
+          x: 50,
+          y: yPosition,
+          size: 9,
+          font,
+        });
+      }
+      
+      yPosition -= 30;
+      if (contrato.assinatura_prestador_data) {
+        page.drawText('_____________________________', { x: 50, y: yPosition, size: 10, font });
+        yPosition -= 15;
+        page.drawText(`Prestador - ${new Date(contrato.assinatura_prestador_data).toLocaleString('pt-BR')}`, {
+          x: 50,
+          y: yPosition,
+          size: 9,
+          font,
+        });
+      }
+      
+      page.drawText(`Documento gerado em: ${new Date().toLocaleString('pt-BR')}`, {
+        x: 50,
+        y: 30,
+        size: 8,
+        font,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+      
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `contrato-${contrato.id}.pdf`;
+      link.click();
+      
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error("Erro ao gerar PDF do contrato");
     }
   };
 
@@ -216,17 +326,28 @@ export const ContratosDigitais = () => {
                     ✓ Assinado por solicitante em {new Date(contrato.assinatura_solicitante_data).toLocaleString("pt-BR")}
                   </div>
                 )}
-                {contrato.status === "pendente" && (
-                  <Button
-                    onClick={() => handleAssinarContrato(contrato.id)}
-                    disabled={loading}
+                <div className="flex gap-2 mt-2">
+                  {contrato.status === "pendente" && (
+                    <Button
+                      onClick={() => handleAssinarContrato(contrato.id)}
+                      disabled={loading}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Assinar
+                    </Button>
+                  )}
+                  <Button 
                     size="sm"
-                    className="w-full mt-2"
+                    variant="outline"
+                    onClick={() => gerarPDFContrato(contrato)}
+                    className={contrato.status === "pendente" ? "" : "w-full"}
                   >
-                    <Check className="h-4 w-4 mr-2" />
-                    Assinar Digitalmente
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF
                   </Button>
-                )}
+                </div>
               </div>
             </CardContent>
           </Card>
