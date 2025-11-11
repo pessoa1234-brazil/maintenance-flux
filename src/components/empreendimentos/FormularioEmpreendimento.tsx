@@ -21,6 +21,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
   const [manualProprietario, setManualProprietario] = useState<File | null>(null);
   const [manualCondominio, setManualCondominio] = useState<File | null>(null);
   const [manualUsuario, setManualUsuario] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     nome: initialData?.nome ? `${initialData.nome} (Cópia)` : "",
     endereco: initialData?.endereco || "",
@@ -37,9 +38,43 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
     data_habite_se: initialData?.data_habite_se || "",
   });
 
+  const formatCEP = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 5) return numbers;
+    return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
+  };
+
+  const validateField = (name: string, value: string) => {
+    try {
+      const fieldSchema = empreendimentoSchema.shape[name as keyof typeof empreendimentoSchema.shape];
+      if (fieldSchema) {
+        fieldSchema.parse(value === "" ? undefined : value);
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    } catch (error: any) {
+      if (error.errors?.[0]?.message) {
+        setFieldErrors(prev => ({ ...prev, [name]: error.errors[0].message }));
+      }
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let formattedValue = value;
+
+    // Apply CEP mask
+    if (name === 'cep') {
+      formattedValue = formatCEP(value);
+    }
+
+    setFormData(prev => ({ ...prev, [name]: formattedValue }));
+    
+    // Validate field in real-time
+    validateField(name, formattedValue);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +225,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
               value={formData.nome}
               onChange={handleInputChange}
               required
+              className={fieldErrors.nome ? "border-destructive" : ""}
             />
+            {fieldErrors.nome && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.nome}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -202,7 +241,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 value={formData.endereco}
                 onChange={handleInputChange}
                 required
+                className={fieldErrors.endereco ? "border-destructive" : ""}
               />
+              {fieldErrors.endereco && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.endereco}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="cep">CEP *</Label>
@@ -211,8 +254,14 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 name="cep"
                 value={formData.cep}
                 onChange={handleInputChange}
+                placeholder="00000-000"
+                maxLength={9}
                 required
+                className={fieldErrors.cep ? "border-destructive" : ""}
               />
+              {fieldErrors.cep && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.cep}</p>
+              )}
             </div>
           </div>
 
@@ -225,7 +274,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 value={formData.cidade}
                 onChange={handleInputChange}
                 required
+                className={fieldErrors.cidade ? "border-destructive" : ""}
               />
+              {fieldErrors.cidade && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.cidade}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="estado">Estado *</Label>
@@ -234,8 +287,14 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 name="estado"
                 value={formData.estado}
                 onChange={handleInputChange}
+                placeholder="Ex: SP"
+                maxLength={2}
                 required
+                className={fieldErrors.estado ? "border-destructive" : ""}
               />
+              {fieldErrors.estado && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.estado}</p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -315,7 +374,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 value={formData.total_unidades}
                 onChange={handleInputChange}
                 required
+                className={fieldErrors.total_unidades ? "border-destructive" : ""}
               />
+              {fieldErrors.total_unidades && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.total_unidades}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="data_entrega">Data de Entrega *</Label>
@@ -326,7 +389,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 value={formData.data_entrega}
                 onChange={handleInputChange}
                 required
+                className={fieldErrors.data_entrega ? "border-destructive" : ""}
               />
+              {fieldErrors.data_entrega && (
+                <p className="text-sm text-destructive mt-1">{fieldErrors.data_entrega}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="data_habite_se">Data do Habite-se</Label>
