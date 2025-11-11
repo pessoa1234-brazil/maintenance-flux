@@ -40,7 +40,7 @@ const Auth = () => {
 
         if (error) throw error;
         toast.success("Login realizado com sucesso!");
-        navigate("/");
+        navigate("/dashboard");
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -50,7 +50,7 @@ const Auth = () => {
               full_name: fullName,
               role: selectedRole,
             },
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/dashboard`,
           },
         });
 
@@ -67,7 +67,7 @@ const Auth = () => {
           }
 
           toast.success("Cadastro realizado com sucesso!");
-          navigate("/");
+          navigate("/dashboard");
         }
       }
     } catch (error: any) {
