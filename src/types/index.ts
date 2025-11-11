@@ -18,6 +18,7 @@ export interface Ativo {
   dataInstalacao: string;
   garantiaMeses: number;
   documentos: Documento[];
+  sistema_predial?: string;
 }
 
 export type StatusOS = "A_FAZER" | "PENDENTE_ORCAMENTO" | "EM_ANDAMENTO" | "CONCLUIDA";

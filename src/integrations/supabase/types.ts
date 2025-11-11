@@ -137,6 +137,7 @@ export type Database = {
           id: string
           marca_modelo: string
           nome: string
+          sistema_predial: string | null
           unidade_id: string
           updated_at: string
         }
@@ -147,6 +148,7 @@ export type Database = {
           id?: string
           marca_modelo: string
           nome: string
+          sistema_predial?: string | null
           unidade_id: string
           updated_at?: string
         }
@@ -157,6 +159,7 @@ export type Database = {
           id?: string
           marca_modelo?: string
           nome?: string
+          sistema_predial?: string | null
           unidade_id?: string
           updated_at?: string
         }
