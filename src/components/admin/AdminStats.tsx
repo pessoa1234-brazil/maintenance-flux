@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, Briefcase, DollarSign, TrendingUp, Clock } from "lucide-react";
+import { Users, Building2, Briefcase, DollarSign, TrendingUp, Clock, MapPin, Award } from "lucide-react";
 import { toast } from "sonner";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface SystemStats {
   totalUsers: number;
@@ -15,7 +16,12 @@ interface SystemStats {
   valorTotalServicos: number;
   mediaTempoResposta: number;
   taxaConclusao: number;
+  empreendimentosPorEstado: { estado: string; total: number }[];
+  roleDistribution: { role: string; count: number }[];
+  topPrestadores: { nome: string; nota: number; avaliacoes: number }[];
 }
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 export function AdminStats() {
   const [stats, setStats] = useState<SystemStats | null>(null);
@@ -66,6 +72,47 @@ export function AdminStats() {
 
       const taxaConclusao = totalOS > 0 ? (osConcluidas / totalOS) * 100 : 0;
 
+      // Distribuição geográfica de empreendimentos
+      const { data: empreendimentosData } = await supabase
+        .from('empreendimentos')
+        .select('estado');
+
+      const estadosMap = new Map<string, number>();
+      empreendimentosData?.forEach(emp => {
+        estadosMap.set(emp.estado, (estadosMap.get(emp.estado) || 0) + 1);
+      });
+
+      const empreendimentosPorEstado = Array.from(estadosMap.entries())
+        .map(([estado, total]) => ({ estado, total }))
+        .sort((a, b) => b.total - a.total);
+
+      // Distribuição de roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role');
+
+      const rolesMap = new Map<string, number>();
+      rolesData?.forEach(r => {
+        rolesMap.set(r.role, (rolesMap.get(r.role) || 0) + 1);
+      });
+
+      const roleDistribution = Array.from(rolesMap.entries())
+        .map(([role, count]) => ({ role, count }));
+
+      // Top prestadores por avaliação
+      const { data: prestadoresData } = await supabase
+        .from('profiles')
+        .select('full_name, nota_media, total_avaliacoes')
+        .gt('total_avaliacoes', 0)
+        .order('nota_media', { ascending: false })
+        .limit(10);
+
+      const topPrestadores = prestadoresData?.map(p => ({
+        nome: p.full_name,
+        nota: p.nota_media || 0,
+        avaliacoes: p.total_avaliacoes || 0
+      })) || [];
+
       setStats({
         totalUsers: totalUsers || 0,
         totalEmpreendimentos: totalEmpreendimentos || 0,
@@ -76,7 +123,10 @@ export function AdminStats() {
         osConcluidas,
         valorTotalServicos,
         mediaTempoResposta,
-        taxaConclusao
+        taxaConclusao,
+        empreendimentosPorEstado,
+        roleDistribution,
+        topPrestadores
       });
 
     } catch (error) {
@@ -193,6 +243,101 @@ export function AdminStats() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráficos de Distribuição */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              <CardTitle>Distribuição Geográfica</CardTitle>
+            </div>
+            <CardDescription>Empreendimentos por estado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.empreendimentosPorEstado}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="estado" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#0088FE" name="Empreendimentos" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              <CardTitle>Distribuição de Usuários</CardTitle>
+            </div>
+            <CardDescription>Por tipo de perfil</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stats.roleDistribution}
+                  dataKey="count"
+                  nameKey="role"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={(entry) => `${entry.role}: ${entry.count}`}
+                >
+                  {stats.roleDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ranking de Prestadores */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-primary" />
+            <CardTitle>Top Prestadores</CardTitle>
+          </div>
+          <CardDescription>Ranking por avaliação</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={stats.topPrestadores} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 5]} />
+              <YAxis dataKey="nome" type="category" width={150} />
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const value = typeof payload[0].value === 'number' ? payload[0].value : 0;
+                    return (
+                      <div className="bg-background border rounded-lg p-2 shadow-lg">
+                        <p className="font-semibold">{payload[0].payload.nome}</p>
+                        <p className="text-sm">⭐ {value.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {payload[0].payload.avaliacoes} avaliações
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="nota" fill="#00C49F" name="Nota Média" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }
