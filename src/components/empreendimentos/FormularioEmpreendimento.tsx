@@ -11,28 +11,30 @@ import { empreendimentoSchema } from "@/lib/validation";
 interface FormularioEmpreendimentoProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  initialData?: any;
+  isDuplicating?: boolean;
 }
 
-export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpreendimentoProps) => {
+export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isDuplicating }: FormularioEmpreendimentoProps) => {
   const [loading, setLoading] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [manualProprietario, setManualProprietario] = useState<File | null>(null);
   const [manualCondominio, setManualCondominio] = useState<File | null>(null);
   const [manualUsuario, setManualUsuario] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    nome: "",
-    endereco: "",
-    cidade: "",
-    estado: "",
-    cep: "",
-    area_terreno: "",
-    numero_andares: "",
-    numero_elevadores: "",
-    numero_apartamentos: "",
-    area_media_apartamentos: "",
-    total_unidades: "",
-    data_entrega: "",
-    data_habite_se: "",
+    nome: initialData?.nome ? `${initialData.nome} (Cópia)` : "",
+    endereco: initialData?.endereco || "",
+    cidade: initialData?.cidade || "",
+    estado: initialData?.estado || "",
+    cep: initialData?.cep || "",
+    area_terreno: initialData?.area_terreno?.toString() || "",
+    numero_andares: initialData?.numero_andares?.toString() || "",
+    numero_elevadores: initialData?.numero_elevadores?.toString() || "",
+    numero_apartamentos: initialData?.numero_apartamentos?.toString() || "",
+    area_media_apartamentos: initialData?.area_media_apartamentos?.toString() || "",
+    total_unidades: initialData?.total_unidades?.toString() || "",
+    data_entrega: initialData?.data_entrega || "",
+    data_habite_se: initialData?.data_habite_se || "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,7 +165,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
         await Promise.all(uploadPromises);
       }
 
-      toast.success("Empreendimento cadastrado com sucesso! Os manuais estão sendo processados pela IA.");
+      toast.success(isDuplicating ? "Empreendimento duplicado com sucesso!" : "Empreendimento cadastrado com sucesso! Os manuais estão sendo processados pela IA.");
       onSuccess?.();
     } catch (error: any) {
       console.error("Erro ao cadastrar empreendimento:", error);
@@ -452,7 +454,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel }: FormularioEmpr
           </Button>
         )}
         <Button type="submit" disabled={loading}>
-          {loading ? "Salvando..." : "Cadastrar Empreendimento"}
+          {loading ? "Salvando..." : isDuplicating ? "Duplicar Empreendimento" : "Cadastrar Empreendimento"}
         </Button>
       </div>
     </form>

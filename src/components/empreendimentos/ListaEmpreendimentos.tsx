@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, Plus } from "lucide-react";
+import { Building2, MapPin, Calendar, Plus, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Empreendimento {
@@ -20,9 +20,10 @@ interface Empreendimento {
 interface ListaEmpreendimentosProps {
   onSelectEmpreendimento: (id: string) => void;
   onNovo: () => void;
+  onDuplicar: (empreendimento: Empreendimento) => void;
 }
 
-export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo }: ListaEmpreendimentosProps) => {
+export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplicar }: ListaEmpreendimentosProps) => {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -84,8 +85,7 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo }: ListaEm
           {empreendimentos.map((emp) => (
             <Card
               key={emp.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => onSelectEmpreendimento(emp.id)}
+              className="hover:shadow-lg transition-shadow"
             >
               <CardHeader>
                 <CardTitle className="flex items-start justify-between">
@@ -98,30 +98,50 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo }: ListaEm
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  Entrega: {new Date(emp.data_entrega).toLocaleDateString("pt-BR")}
-                </div>
-                
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant="secondary">
-                    {emp.total_unidades} unidades
-                  </Badge>
-                  {emp.numero_andares && (
-                    <Badge variant="outline">
-                      {emp.numero_andares} andares
+                <div 
+                  className="cursor-pointer"
+                  onClick={() => onSelectEmpreendimento(emp.id)}
+                >
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    Entrega: {new Date(emp.data_entrega).toLocaleDateString("pt-BR")}
+                  </div>
+                  
+                  <div className="flex gap-2 flex-wrap mt-3">
+                    <Badge variant="secondary">
+                      {emp.total_unidades} unidades
                     </Badge>
-                  )}
-                  {emp.numero_apartamentos && (
-                    <Badge variant="outline">
-                      {emp.numero_apartamentos} apts
-                    </Badge>
-                  )}
+                    {emp.numero_andares && (
+                      <Badge variant="outline">
+                        {emp.numero_andares} andares
+                      </Badge>
+                    )}
+                    {emp.numero_apartamentos && (
+                      <Badge variant="outline">
+                        {emp.numero_apartamentos} apts
+                      </Badge>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-3">
+                    {emp.endereco}
+                  </p>
                 </div>
 
-                <p className="text-xs text-muted-foreground line-clamp-2">
-                  {emp.endereco}
-                </p>
+                <div className="pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicar(emp);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Duplicar Empreendimento
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
