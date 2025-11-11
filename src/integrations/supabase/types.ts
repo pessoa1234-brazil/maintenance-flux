@@ -140,45 +140,116 @@ export type Database = {
       }
       empreendimentos: {
         Row: {
+          area_media_apartamentos: number | null
+          area_terreno: number | null
           cep: string
           cidade: string
           construtora_id: string
           created_at: string
           data_entrega: string
+          data_habite_se: string | null
           endereco: string
           estado: string
           id: string
+          manual_condominio: string | null
+          manual_proprietario: string | null
+          manual_usuario: string | null
           nome: string
+          numero_andares: number | null
+          numero_apartamentos: number | null
+          numero_elevadores: number | null
           total_unidades: number
           updated_at: string
         }
         Insert: {
+          area_media_apartamentos?: number | null
+          area_terreno?: number | null
           cep: string
           cidade: string
           construtora_id: string
           created_at?: string
           data_entrega: string
+          data_habite_se?: string | null
           endereco: string
           estado: string
           id?: string
+          manual_condominio?: string | null
+          manual_proprietario?: string | null
+          manual_usuario?: string | null
           nome: string
+          numero_andares?: number | null
+          numero_apartamentos?: number | null
+          numero_elevadores?: number | null
           total_unidades?: number
           updated_at?: string
         }
         Update: {
+          area_media_apartamentos?: number | null
+          area_terreno?: number | null
           cep?: string
           cidade?: string
           construtora_id?: string
           created_at?: string
           data_entrega?: string
+          data_habite_se?: string | null
           endereco?: string
           estado?: string
           id?: string
+          manual_condominio?: string | null
+          manual_proprietario?: string | null
+          manual_usuario?: string | null
           nome?: string
+          numero_andares?: number | null
+          numero_apartamentos?: number | null
+          numero_elevadores?: number | null
           total_unidades?: number
           updated_at?: string
         }
         Relationships: []
+      }
+      especificacoes_tecnicas: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          empreendimento_id: string
+          especificacao: string
+          fonte: string | null
+          id: string
+          item: string
+          pagina: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          empreendimento_id: string
+          especificacao: string
+          fonte?: string | null
+          id?: string
+          item: string
+          pagina?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          empreendimento_id?: string
+          especificacao?: string
+          fonte?: string | null
+          id?: string
+          item?: string
+          pagina?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "especificacoes_tecnicas_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       itens_checklist: {
         Row: {
