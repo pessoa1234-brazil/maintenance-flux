@@ -18,6 +18,8 @@ const Index = () => {
   const [activeView, setActiveView] = useState<View>("dashboard");
   const { db, updateDatabase } = useDatabase();
   const [loading, setLoading] = useState(true);
+  const [selectedOSId, setSelectedOSId] = useState<string | null>(null);
+  const [selectedAtivoId, setSelectedAtivoId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -44,9 +46,6 @@ const Index = () => {
       <p className="text-muted-foreground">Carregando...</p>
     </div>;
   }
-
-  const [selectedOSId, setSelectedOSId] = useState<string | null>(null);
-  const [selectedAtivoId, setSelectedAtivoId] = useState<string | null>(null);
 
   const handleAceitarProposta = (orcamentoId: string) => {
     updateDatabase((prevDb) => {
