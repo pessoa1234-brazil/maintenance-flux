@@ -16,6 +16,9 @@ import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LogOut, Building2, Plus, FileText } from "lucide-react";
+import { ProfileMenu } from "@/components/profile/ProfileMenu";
+import { NotificationService } from "@/components/notifications/NotificationService";
+import { ManualChatWidget } from "@/components/chat/ManualChatWidget";
 
 type View = "dashboard" | "pipeline" | "empreendimentos" | "ativos" | "relatorios";
 
@@ -143,6 +146,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <NotificationService />
+      <ManualChatWidget />
       <Sidebar activeView={activeView} onNavigate={(view) => setActiveView(view as View)} />
 
       <main className="ml-64 p-8">
@@ -163,10 +168,7 @@ const Index = () => {
             <Building2 className="h-4 w-4" />
             Empreendimentos
           </Button>
-          <Button onClick={handleLogout} variant="outline" className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Button>
+          <ProfileMenu />
         </div>
 
         {activeView === "dashboard" && renderDashboard()}

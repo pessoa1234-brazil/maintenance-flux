@@ -11,6 +11,8 @@ import NovaOS from "./pages/NovaOS";
 import Relatorios from "./pages/Relatorios";
 import Marketplace from "./pages/Marketplace";
 import Analytics from "./pages/Analytics";
+import BusinessIntelligence from "./pages/BusinessIntelligence";
+import Gamification from "./pages/Gamification";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/bi" element={<BusinessIntelligence />} />
+          <Route path="/gamificacao" element={<Gamification />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
