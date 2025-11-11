@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Vinculacao from "./pages/Vinculacao";
+import NovaOS from "./pages/NovaOS";
+import Relatorios from "./pages/Relatorios";
 import SistemaGarantias from "./components/garantias/SistemaGarantias";
 
 const queryClient = new QueryClient();
@@ -21,6 +23,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/vinculacao" element={<Vinculacao />} />
+          <Route path="/nova-os" element={<NovaOS />} />
+          <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/garantias" element={<SistemaGarantias />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

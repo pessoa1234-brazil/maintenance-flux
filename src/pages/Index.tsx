@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { DashboardConstrutora } from "@/components/dashboards/DashboardConstrutora";
+import { DashboardCondominio } from "@/components/dashboards/DashboardCondominio";
+import { DashboardPrestador } from "@/components/dashboards/DashboardPrestador";
 import { Pipeline } from "@/components/pipeline/Pipeline";
 import { Ativos } from "@/components/ativos/Ativos";
 import { Relatorios } from "@/components/relatorios/Relatorios";
@@ -12,7 +15,7 @@ import { ModalAtivoWrapper } from "@/components/modals/ModalAtivoWrapper";
 import { useDatabase } from "@/hooks/useDatabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { LogOut, Building2 } from "lucide-react";
+import { LogOut, Building2, Plus, FileText } from "lucide-react";
 
 type View = "dashboard" | "pipeline" | "empreendimentos" | "ativos" | "relatorios";
 
@@ -23,13 +26,27 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOSId, setSelectedOSId] = useState<string | null>(null);
   const [selectedAtivoId, setSelectedAtivoId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
+        return;
       }
+
+      // Buscar role do usuário
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (roleData) {
+        setUserRole(roleData.role);
+      }
+
       setLoading(false);
     };
 
@@ -113,22 +130,46 @@ const Index = () => {
   const selectedOS = selectedOSId ? db.ordensServico[selectedOSId] : null;
   const selectedAtivo = selectedAtivoId ? db.ativos[selectedAtivoId] : null;
 
+  const renderDashboard = () => {
+    if (userRole === "construtora") {
+      return <DashboardConstrutora />;
+    } else if (userRole === "prestador") {
+      return <DashboardPrestador />;
+    } else if (userRole === "condominio" || userRole === "cliente") {
+      return <DashboardCondominio />;
+    }
+    return <Dashboard db={db} />;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar activeView={activeView} onNavigate={(view) => setActiveView(view as View)} />
 
       <main className="ml-64 p-8">
         <div className="flex justify-end gap-2 mb-6">
+          {(userRole === "condominio" || userRole === "cliente") && (
+            <>
+              <Button onClick={() => navigate("/nova-os")} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nova OS
+              </Button>
+              <Button onClick={() => navigate("/relatorios")} variant="outline" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Relatórios
+              </Button>
+            </>
+          )}
           <Button onClick={() => navigate("/vinculacao")} variant="outline" className="gap-2">
             <Building2 className="h-4 w-4" />
-            Vincular Empreendimento
+            Empreendimentos
           </Button>
           <Button onClick={handleLogout} variant="outline" className="gap-2">
             <LogOut className="h-4 w-4" />
             Sair
           </Button>
         </div>
-        {activeView === "dashboard" && <Dashboard db={db} />}
+
+        {activeView === "dashboard" && renderDashboard()}
         {activeView === "pipeline" && <Pipeline db={db} onOpenOS={setSelectedOSId} />}
         {activeView === "empreendimentos" && <Empreendimentos />}
         {activeView === "ativos" && <Ativos db={db} onOpenAtivo={setSelectedAtivoId} />}
