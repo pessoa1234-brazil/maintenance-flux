@@ -91,9 +91,8 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
       const validationResult = empreendimentoSchema.safeParse(formData);
       
       if (!validationResult.success) {
-        const errors = validationResult.error.format();
-        const firstError = Object.values(errors).find((err: any) => err._errors?.length > 0);
-        throw new Error((firstError as any)?._errors[0] || "Dados inválidos");
+        const errorMessages = validationResult.error.issues.map(err => err.message).join("; ");
+        throw new Error(errorMessages);
       }
 
       const validatedData = validationResult.data;
