@@ -1244,6 +1244,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_ip_address: { Args: { ip_text: string }; Returns: string }
       verificar_badges: { Args: { p_prestador_id: string }; Returns: undefined }
     }
     Enums: {
