@@ -251,6 +251,39 @@ export type Database = {
           },
         ]
       }
+      garantias_nbr_17170: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          exemplos_falhas: string | null
+          id: string
+          prazo_anos: number
+          sistema: string
+          subsistema: string | null
+          tipo_garantia: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          exemplos_falhas?: string | null
+          id?: string
+          prazo_anos: number
+          sistema: string
+          subsistema?: string | null
+          tipo_garantia: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          exemplos_falhas?: string | null
+          id?: string
+          prazo_anos?: number
+          sistema?: string
+          subsistema?: string | null
+          tipo_garantia?: string
+        }
+        Relationships: []
+      }
       itens_checklist: {
         Row: {
           checklist_id: string
@@ -350,13 +383,21 @@ export type Database = {
           ativo_id: string | null
           created_at: string
           data_conclusao: string | null
+          data_limite_atendimento: string | null
           data_solicitacao: string
           descricao: string | null
+          descricao_trabalho_realizado: string | null
+          fotos_antes: string[] | null
+          fotos_depois: string[] | null
           id: string
+          materiais_utilizados: string | null
           origem: Database["public"]["Enums"]["origem_os"]
+          prazo_atendimento_dias: number | null
           prestador_id: string | null
+          sistema_predial: string | null
           solicitante_id: string
           status: Database["public"]["Enums"]["status_os"]
+          tipo_servico: Database["public"]["Enums"]["tipo_servico"] | null
           titulo: string
           unidade_id: string
           updated_at: string
@@ -366,13 +407,21 @@ export type Database = {
           ativo_id?: string | null
           created_at?: string
           data_conclusao?: string | null
+          data_limite_atendimento?: string | null
           data_solicitacao?: string
           descricao?: string | null
+          descricao_trabalho_realizado?: string | null
+          fotos_antes?: string[] | null
+          fotos_depois?: string[] | null
           id?: string
+          materiais_utilizados?: string | null
           origem: Database["public"]["Enums"]["origem_os"]
+          prazo_atendimento_dias?: number | null
           prestador_id?: string | null
+          sistema_predial?: string | null
           solicitante_id: string
           status?: Database["public"]["Enums"]["status_os"]
+          tipo_servico?: Database["public"]["Enums"]["tipo_servico"] | null
           titulo: string
           unidade_id: string
           updated_at?: string
@@ -382,13 +431,21 @@ export type Database = {
           ativo_id?: string | null
           created_at?: string
           data_conclusao?: string | null
+          data_limite_atendimento?: string | null
           data_solicitacao?: string
           descricao?: string | null
+          descricao_trabalho_realizado?: string | null
+          fotos_antes?: string[] | null
+          fotos_depois?: string[] | null
           id?: string
+          materiais_utilizados?: string | null
           origem?: Database["public"]["Enums"]["origem_os"]
+          prazo_atendimento_dias?: number | null
           prestador_id?: string | null
+          sistema_predial?: string | null
           solicitante_id?: string
           status?: Database["public"]["Enums"]["status_os"]
+          tipo_servico?: Database["public"]["Enums"]["tipo_servico"] | null
           titulo?: string
           unidade_id?: string
           updated_at?: string
@@ -407,6 +464,53 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagamentos: {
+        Row: {
+          comprovante_url: string | null
+          created_at: string | null
+          data_pagamento: string | null
+          id: string
+          metodo_pagamento: string | null
+          observacoes: string | null
+          os_id: string
+          status: string
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          os_id: string
+          status?: string
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          os_id?: string
+          status?: string
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
             referencedColumns: ["id"]
           },
         ]
@@ -461,6 +565,53 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios_conformidade: {
+        Row: {
+          created_at: string | null
+          empreendimento_id: string
+          garantias_preservadas: boolean | null
+          gerado_por: string | null
+          id: string
+          manutencoes_pendentes: number | null
+          manutencoes_realizadas: number | null
+          observacoes: string | null
+          periodo_fim: string
+          periodo_inicio: string
+        }
+        Insert: {
+          created_at?: string | null
+          empreendimento_id: string
+          garantias_preservadas?: boolean | null
+          gerado_por?: string | null
+          id?: string
+          manutencoes_pendentes?: number | null
+          manutencoes_realizadas?: number | null
+          observacoes?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+        }
+        Update: {
+          created_at?: string | null
+          empreendimento_id?: string
+          garantias_preservadas?: boolean | null
+          gerado_por?: string | null
+          id?: string
+          manutencoes_pendentes?: number | null
+          manutencoes_realizadas?: number | null
+          observacoes?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_conformidade_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
             referencedColumns: ["id"]
           },
         ]
@@ -529,6 +680,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_prazo_atendimento: {
+        Args: {
+          p_sistema_predial: string
+          p_tipo_servico: Database["public"]["Enums"]["tipo_servico"]
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -554,6 +712,7 @@ export type Database = {
         | "FOTO"
         | "OUTRO"
       tipo_item_checklist: "CHECKBOX" | "TEXTO" | "FOTO"
+      tipo_servico: "garantia" | "manutencao_preventiva" | "servico_novo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -699,6 +858,7 @@ export const Constants = {
         "OUTRO",
       ],
       tipo_item_checklist: ["CHECKBOX", "TEXTO", "FOTO"],
+      tipo_servico: ["garantia", "manutencao_preventiva", "servico_novo"],
     },
   },
 } as const
