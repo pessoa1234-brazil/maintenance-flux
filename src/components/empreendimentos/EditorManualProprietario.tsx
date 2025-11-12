@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { FileText, Plus, Save, Trash2, Eye, EyeOff } from "lucide-react";
+import { FileText, Plus, Save, Trash2, Eye, EyeOff, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { UploadImagensManual } from "./UploadImagensManual";
 import { ExportarManualPDF } from "./ExportarManualPDF";
+import { HistoricoManual } from "./HistoricoManual";
 
 interface ManualSection {
   id: string;
@@ -303,6 +304,10 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="preview">Visualização</TabsTrigger>
+          <TabsTrigger value="historico">
+            <History className="w-4 h-4 mr-2" />
+            Histórico
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="editor" className="space-y-4">
@@ -570,6 +575,18 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
               ))}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="historico" className="space-y-4">
+          <HistoricoManual 
+            empreendimentoId={empreendimentoId} 
+            sectionId={selectedSection?.id || null}
+          />
+          {selectedSection && (
+            <div className="text-sm text-muted-foreground text-center">
+              Mostrando histórico da seção: {selectedSection.titulo}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

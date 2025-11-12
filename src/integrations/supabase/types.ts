@@ -918,6 +918,60 @@ export type Database = {
           },
         ]
       }
+      manual_proprietario_historico: {
+        Row: {
+          alterado_por: string | null
+          campo_alterado: string
+          conteudo_id: string
+          created_at: string
+          empreendimento_id: string
+          id: string
+          motivo_alteracao: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+          versao: number
+        }
+        Insert: {
+          alterado_por?: string | null
+          campo_alterado: string
+          conteudo_id: string
+          created_at?: string
+          empreendimento_id: string
+          id?: string
+          motivo_alteracao?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+          versao?: number
+        }
+        Update: {
+          alterado_por?: string | null
+          campo_alterado?: string
+          conteudo_id?: string
+          created_at?: string
+          empreendimento_id?: string
+          id?: string
+          motivo_alteracao?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_proprietario_historico_conteudo_id_fkey"
+            columns: ["conteudo_id"]
+            isOneToOne: false
+            referencedRelation: "manual_proprietario_conteudo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_proprietario_historico_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_proprietario_templates: {
         Row: {
           conteudo_padrao: string | null
