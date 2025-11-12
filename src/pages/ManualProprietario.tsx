@@ -14,16 +14,59 @@ export default function ManualProprietario() {
   const [empreendimentos, setEmpreendimentos] = useState<any[]>([]);
   const [selectedEmpreendimento, setSelectedEmpreendimento] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [isConstrutora, setIsConstrutora] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    loadEmpreendimentos();
+    checkRole();
+  }, []);
+
+  useEffect(() => {
+    if (isConstrutora) {
+      loadEmpreendimentos();
+    }
+  }, [isConstrutora]);
+
+  useEffect(() => {
+    if (isConstrutora) {
     
-    // Se veio com ID na URL
-    const empId = searchParams.get("empreendimento");
-    if (empId) {
-      setSelectedEmpreendimento(empId);
+      // Se veio com ID na URL
+      const empId = searchParams.get("empreendimento");
+      if (empId) {
+        setSelectedEmpreendimento(empId);
+      }
     }
   }, [searchParams]);
+
+  const checkRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data: roleData, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "construtora")
+        .single();
+
+      if (error || !roleData) {
+        toast.error("Acesso restrito a usuários com perfil de construtora");
+        navigate("/dashboard");
+        return;
+      }
+
+      setIsConstrutora(true);
+    } catch (error) {
+      console.error("Erro ao verificar role:", error);
+      navigate("/dashboard");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const loadEmpreendimentos = async () => {
     try {
@@ -51,6 +94,20 @@ export default function ManualProprietario() {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isConstrutora) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

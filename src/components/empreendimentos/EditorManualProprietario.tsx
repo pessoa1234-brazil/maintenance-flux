@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { FileText, Plus, Save, Trash2, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
+import { FileText, Plus, Save, Trash2, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { UploadImagensManual } from "./UploadImagensManual";
+import { ExportarManualPDF } from "./ExportarManualPDF";
 
 interface ManualSection {
   id: string;
@@ -22,6 +24,7 @@ interface ManualSection {
   dados_estruturados: any;
   editavel: boolean;
   visivel: boolean;
+  imagens?: string[];
 }
 
 interface Template {
@@ -46,6 +49,7 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
   const [loading, setLoading] = useState(true);
   const [selectedSection, setSelectedSection] = useState<ManualSection | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [empreendimentoNome, setEmpreendimentoNome] = useState("");
   const [formData, setFormData] = useState({
     secao: "",
     subsecao: "",
@@ -62,6 +66,16 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
   const loadData = async () => {
     setLoading(true);
     try {
+      // Carregar dados do empreendimento
+      const { data: empData, error: empError } = await supabase
+        .from("empreendimentos")
+        .select("nome")
+        .eq("id", empreendimentoId)
+        .single();
+
+      if (empError) throw empError;
+      setEmpreendimentoNome(empData.nome);
+
       // Carregar seções existentes
       const { data: sectionsData, error: sectionsError } = await supabase
         .from("manual_proprietario_conteudo")
@@ -71,7 +85,12 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
         .order("ordem", { ascending: true });
 
       if (sectionsError) throw sectionsError;
-      setSections(sectionsData || []);
+      setSections(
+        (sectionsData || []).map((section: any) => ({
+          ...section,
+          imagens: Array.isArray(section.imagens) ? section.imagens : [],
+        }))
+      );
 
       // Carregar templates
       const { data: templatesData, error: templatesError } = await supabase
@@ -257,23 +276,26 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
             Elabore o manual seguindo a estrutura NBR 14037
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedSection(null);
-            setEditMode(true);
-            setFormData({
-              secao: "",
-              subsecao: "",
-              titulo: "",
-              conteudo: "",
-              tipo_conteudo: "texto",
-              dados_estruturados: null,
-            });
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Seção
-        </Button>
+        <div className="flex gap-2">
+          <ExportarManualPDF sections={sections} empreendimentoNome={empreendimentoNome} />
+          <Button
+            onClick={() => {
+              setSelectedSection(null);
+              setEditMode(true);
+              setFormData({
+                secao: "",
+                subsecao: "",
+                titulo: "",
+                conteudo: "",
+                tipo_conteudo: "texto",
+                dados_estruturados: null,
+              });
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Seção
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="editor" className="w-full">
@@ -364,6 +386,15 @@ export const EditorManualProprietario = ({ empreendimentoId }: EditorManualPropr
                     Suporte a formatação HTML básica
                   </p>
                 </div>
+
+                {selectedSection && (
+                  <UploadImagensManual
+                    sectionId={selectedSection.id}
+                    empreendimentoId={empreendimentoId}
+                    imagens={selectedSection.imagens || []}
+                    onImagensUpdated={loadData}
+                  />
+                )}
 
                 <div className="flex gap-2">
                   <Button onClick={handleSaveSection}>

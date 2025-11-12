@@ -855,6 +855,7 @@ export type Database = {
           empreendimento_id: string
           id: string
           id_documento: string | null
+          imagens: Json | null
           ordem: number
           secao: string
           subsecao: string | null
@@ -875,6 +876,7 @@ export type Database = {
           empreendimento_id: string
           id?: string
           id_documento?: string | null
+          imagens?: Json | null
           ordem?: number
           secao: string
           subsecao?: string | null
@@ -895,6 +897,7 @@ export type Database = {
           empreendimento_id?: string
           id?: string
           id_documento?: string | null
+          imagens?: Json | null
           ordem?: number
           secao?: string
           subsecao?: string | null
