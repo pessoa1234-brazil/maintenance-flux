@@ -25,10 +25,11 @@ import SistemaGarantias from "./components/garantias/SistemaGarantias";
 import CalendarioManutencoes from "./pages/CalendarioManutencoes";
 import ManualProprietario from "./pages/ManualProprietario";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  const queryClient = React.useMemo(() => new QueryClient(), []);
+  
+  return (
+    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -59,6 +60,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
