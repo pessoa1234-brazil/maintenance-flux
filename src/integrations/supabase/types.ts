@@ -844,6 +844,116 @@ export type Database = {
           },
         ]
       }
+      manual_proprietario_conteudo: {
+        Row: {
+          conteudo: string
+          created_at: string | null
+          created_by: string | null
+          dados_estruturados: Json | null
+          data_documento: string | null
+          editavel: boolean | null
+          empreendimento_id: string
+          id: string
+          id_documento: string | null
+          ordem: number
+          secao: string
+          subsecao: string | null
+          tipo_conteudo: string | null
+          tipo_documento: string | null
+          titulo: string
+          updated_at: string | null
+          updated_by: string | null
+          visivel: boolean | null
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string | null
+          created_by?: string | null
+          dados_estruturados?: Json | null
+          data_documento?: string | null
+          editavel?: boolean | null
+          empreendimento_id: string
+          id?: string
+          id_documento?: string | null
+          ordem?: number
+          secao: string
+          subsecao?: string | null
+          tipo_conteudo?: string | null
+          tipo_documento?: string | null
+          titulo: string
+          updated_at?: string | null
+          updated_by?: string | null
+          visivel?: boolean | null
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string | null
+          created_by?: string | null
+          dados_estruturados?: Json | null
+          data_documento?: string | null
+          editavel?: boolean | null
+          empreendimento_id?: string
+          id?: string
+          id_documento?: string | null
+          ordem?: number
+          secao?: string
+          subsecao?: string | null
+          tipo_conteudo?: string | null
+          tipo_documento?: string | null
+          titulo?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          visivel?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_proprietario_conteudo_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_proprietario_templates: {
+        Row: {
+          conteudo_padrao: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          obrigatorio: boolean | null
+          ordem: number
+          secao: string
+          subsecao: string | null
+          tipo_conteudo: string | null
+          titulo: string
+        }
+        Insert: {
+          conteudo_padrao?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number
+          secao: string
+          subsecao?: string | null
+          tipo_conteudo?: string | null
+          titulo: string
+        }
+        Update: {
+          conteudo_padrao?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          obrigatorio?: boolean | null
+          ordem?: number
+          secao?: string
+          subsecao?: string | null
+          tipo_conteudo?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
       mensagens_chat: {
         Row: {
           created_at: string
