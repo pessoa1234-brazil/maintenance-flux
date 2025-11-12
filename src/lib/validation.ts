@@ -1,7 +1,8 @@
 import * as z from "zod";
 
 // Empreendimento validation schema
-export const empreendimentoSchema = z.object({
+// Base schema for all empreendimentos
+const baseEmpreendimentoSchema = z.object({
   nome: z.string()
     .min(3, { message: "Nome: deve ter no mínimo 3 caracteres" })
     .max(200, { message: "Nome: deve ter no máximo 200 caracteres" }),
@@ -15,10 +16,22 @@ export const empreendimentoSchema = z.object({
     .length(2, { message: "Estado: deve ter exatamente 2 caracteres (sigla UF)" }),
   cep: z.string()
     .regex(/^\d{5}-?\d{3}$/, { message: "CEP: formato inválido (use 00000-000)" }),
+  tipo_empreendimento: z.enum(["condominio", "nao_condominio"]),
   area_terreno: z.coerce.number()
     .positive({ message: "Área do terreno: deve ser maior que zero" })
     .max(1000000, { message: "Área do terreno: deve ser no máximo 1.000.000 m²" })
     .optional(),
+  total_unidades: z.coerce.number()
+    .int({ message: "Total de unidades: deve ser um número inteiro" })
+    .nonnegative({ message: "Total de unidades: não pode ser negativo" })
+    .max(10000, { message: "Total de unidades: deve ser no máximo 10.000" }),
+  data_entrega: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Data de entrega: formato inválido (use AAAA-MM-DD)" }),
+  data_habite_se: z.string().optional(),
+});
+
+// Condominium-specific fields
+const condominioFields = z.object({
   numero_andares: z.coerce.number()
     .int({ message: "Número de andares: deve ser um número inteiro" })
     .positive({ message: "Número de andares: deve ser maior que zero" })
@@ -38,14 +51,10 @@ export const empreendimentoSchema = z.object({
     .positive({ message: "Área média dos apartamentos: deve ser maior que zero" })
     .max(10000, { message: "Área média dos apartamentos: deve ser no máximo 10.000 m²" })
     .optional(),
-  total_unidades: z.coerce.number()
-    .int({ message: "Total de unidades: deve ser um número inteiro" })
-    .nonnegative({ message: "Total de unidades: não pode ser negativo" })
-    .max(10000, { message: "Total de unidades: deve ser no máximo 10.000" }),
-  data_entrega: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Data de entrega: formato inválido (use AAAA-MM-DD)" }),
-  data_habite_se: z.string().optional(),
 });
+
+// Export unified schema - validates conditionally based on tipo_empreendimento
+export const empreendimentoSchema = baseEmpreendimentoSchema.merge(condominioFields);
 
 // Ordem de Serviço validation schema
 export const ordemServicoSchema = z.object({

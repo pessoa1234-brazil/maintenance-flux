@@ -124,8 +124,17 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Prepare data for validation - exclude condominium fields for non-condominium projects
+      const dataToValidate = { ...formData };
+      if (formData.tipo_empreendimento === "nao_condominio") {
+        dataToValidate.numero_andares = "";
+        dataToValidate.numero_elevadores = "";
+        dataToValidate.numero_apartamentos = "";
+        dataToValidate.area_media_apartamentos = "";
+      }
+
       // Validate form data with zod
-      const validationResult = empreendimentoSchema.safeParse(formData);
+      const validationResult = empreendimentoSchema.safeParse(dataToValidate);
       
       if (!validationResult.success) {
         const errorMessages = validationResult.error.issues.map(err => err.message).join("; ");
