@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Building2, FileText, Search } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Search, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EspecificacoesTecnicas } from "./EspecificacoesTecnicas";
 import { BuscaInteligenteManuais } from "./BuscaInteligenteManuais";
 import { DocumentosManuais } from "./DocumentosManuais";
 import { DadosEstruturados } from "./DadosEstruturados";
+import { EditorManualProprietario } from "./EditorManualProprietario";
 
 interface EmpreendimentoDetalhado {
   id: string;
@@ -42,10 +43,24 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
   const [empreendimento, setEmpreendimento] = useState<EmpreendimentoDetalhado | null>(null);
   const [fotos, setFotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isConstrutora, setIsConstrutora] = useState(false);
 
   useEffect(() => {
     carregarDados();
+    checkRole();
   }, [id]);
+
+  const checkRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+    setIsConstrutora(roles?.some((r) => r.role === "construtora") || false);
+  };
 
   const carregarDados = async () => {
     try {
@@ -135,6 +150,12 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
             <FileText className="h-4 w-4" />
             Dados Estruturados
           </TabsTrigger>
+          {isConstrutora && (
+            <TabsTrigger value="elaboracao" className="gap-2">
+              <Edit className="h-4 w-4" />
+              Elaboração de Manual
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="geral" className="space-y-6">
@@ -270,6 +291,22 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
         <TabsContent value="especificacoes">
           <EspecificacoesTecnicas empreendimentoId={id} />
         </TabsContent>
+
+        {isConstrutora && (
+          <TabsContent value="elaboracao" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Editor de Manual do Proprietário</CardTitle>
+                <CardDescription>
+                  Crie e edite o manual do proprietário seguindo as normas ABNT
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EditorManualProprietario empreendimentoId={id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

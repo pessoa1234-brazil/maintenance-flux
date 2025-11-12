@@ -13,5 +13,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storageKey: 'manutencao360-auth',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'manutencao360',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
 });
