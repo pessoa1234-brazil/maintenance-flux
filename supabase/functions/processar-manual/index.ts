@@ -64,9 +64,18 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
-    // Converter arquivo para base64
+    // Converter arquivo para base64 em chunks para evitar stack overflow
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 8192;
+    let binaryString = '';
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      binaryString += String.fromCharCode(...chunk);
+    }
+    
+    const base64 = btoa(binaryString);
 
     // Preparar prompt para IA
     const prompt = `
