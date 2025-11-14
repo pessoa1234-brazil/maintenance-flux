@@ -96,7 +96,7 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
     
     const { error: uploadError, data } = await supabase.storage
       .from("manuais")
-      .upload(fileName, file);
+      .upload(fileName, file, { upsert: true });
     
     if (uploadError) throw uploadError;
 
@@ -104,14 +104,24 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
       .from("manuais")
       .getPublicUrl(fileName);
 
+    console.log("Iniciando processamento do manual:", { tipo, publicUrl });
+
     // Processar documento com IA
-    await supabase.functions.invoke('processar-manual', {
+    const { data: processResult, error: processError } = await supabase.functions.invoke('processar-manual', {
       body: {
         empreendimentoId,
         tipoManual: tipo,
         arquivoUrl: publicUrl
       }
     });
+
+    if (processError) {
+      console.error("Erro ao processar manual:", processError);
+      toast.error(`Erro ao processar ${tipo}: ${processError.message}`);
+    } else {
+      console.log("Manual processado com sucesso:", processResult);
+      toast.success(`Manual ${tipo} enviado para processamento`);
+    }
 
     return publicUrl;
   };
