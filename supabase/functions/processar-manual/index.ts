@@ -37,11 +37,17 @@ serve(async (req) => {
     if (insertError) throw insertError;
 
     // Download do arquivo do storage
-    const urlParts = arquivoUrl.split('/');
-    const bucket = urlParts[urlParts.length - 3];
-    const path = urlParts.slice(-2).join('/');
+    // URL format: https://PROJECT_ID.supabase.co/storage/v1/object/public/BUCKET/PATH
+    const urlParts = arquivoUrl.split('/storage/v1/object/public/');
+    if (urlParts.length !== 2) {
+      throw new Error('URL do arquivo inválida');
+    }
+    
+    const [bucketAndPath] = urlParts[1].split('/');
+    const bucket = bucketAndPath;
+    const path = urlParts[1].substring(bucket.length + 1);
 
-    console.log('Baixando arquivo:', { bucket, path });
+    console.log('Baixando arquivo:', { bucket, path, url: arquivoUrl });
 
     const { data: fileData, error: downloadError } = await supabase
       .storage
