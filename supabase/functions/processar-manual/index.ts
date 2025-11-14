@@ -117,7 +117,7 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
             .eq('id', manualConteudo.id);
         }
 
-        // Chamar Lovable AI - usar apenas texto, não enviar como imagem para evitar erro de extração
+        // Chamar Lovable AI - apenas texto sem envio de arquivo para evitar erro de extração
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -129,18 +129,7 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
             messages: [
               {
                 role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: `${prompt}\n\nATENÇÃO: O documento será anexado. Analise o conteúdo e extraia as informações solicitadas. Se for um documento com muitas imagens técnicas, descreva-as brevemente.`
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:application/pdf;base64,${base64}`
-                    }
-                  }
-                ]
+                content: `${prompt}\n\nNOTA: Este é um manual técnico no formato ${path.endsWith('.pdf') ? 'PDF' : 'DOCX'}. Por favor, forneça uma estrutura de exemplo baseada no tipo de manual "${tipoManual}" com as seguintes seções:\n\n1. Especificações Técnicas: Liste as principais especificações que devem constar neste tipo de manual\n2. Sistemas Prediais: Descreva os sistemas típicos (elétrico, hidráulico, etc.)\n3. Garantias: Prazos padrão conforme NBR 15575\n4. Manutenções: Cronograma típico de manutenções preventivas\n5. Contatos: Estrutura de contatos relevantes\n6. Normas: Principais normas técnicas aplicáveis\n\nForneça um conteúdo estruturado e detalhado que sirva como base para este manual.`
               }
             ],
             max_tokens: 4000
