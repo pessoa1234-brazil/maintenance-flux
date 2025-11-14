@@ -96,6 +96,8 @@ export const BuscaInteligenteManuais = ({ empreendimentoId }: BuscaInteligenteMa
       const { data: session } = await supabase.auth.getSession();
       const token = session?.session?.access_token;
 
+      console.log("Iniciando busca:", { empreendimentoId, pergunta, tipoManual });
+
       const { data, error } = await supabase.functions.invoke("buscar-manual", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: {
@@ -105,8 +107,19 @@ export const BuscaInteligenteManuais = ({ empreendimentoId }: BuscaInteligenteMa
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na busca:", error);
+        throw error;
+      }
 
+      console.log("Resultado da busca:", data);
+
+      if (!data.referencias || data.referencias.length === 0) {
+        toast.warning("Nenhum manual processado encontrado. Aguarde o processamento dos manuais ou faça upload de novos documentos.");
+      } else {
+        toast.success("Busca concluída com sucesso");
+      }
+      
       setResultado(data);
       await carregarHistorico(); // Recarregar histórico após busca
     } catch (error: any) {
