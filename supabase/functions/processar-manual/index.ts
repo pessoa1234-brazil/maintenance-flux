@@ -45,9 +45,15 @@ serve(async (req) => {
       throw new Error('URL do arquivo inválida');
     }
     
-    const [bucketAndPath] = urlParts[1].split('/');
-    const bucket = bucketAndPath;
-    const path = urlParts[1].substring(bucket.length + 1);
+    // Parse bucket and path correctly
+    const afterPublic = urlParts[1]; // e.g., "manuais/folder/file.pdf"
+    const firstSlashIndex = afterPublic.indexOf('/');
+    if (firstSlashIndex === -1) {
+      throw new Error('URL do arquivo inválida - caminho não encontrado');
+    }
+    
+    const bucket = afterPublic.substring(0, firstSlashIndex); // "manuais"
+    const path = afterPublic.substring(firstSlashIndex + 1); // "folder/file.pdf"
 
     console.log('Baixando arquivo:', { bucket, path, url: arquivoUrl });
 
