@@ -11,19 +11,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  let manualConteudo: any = null;
+
   try {
     const { empreendimentoId, tipoManual, arquivoUrl } = await req.json();
 
     console.log('Processando manual:', { empreendimentoId, tipoManual, arquivoUrl });
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     // Criar registro na tabela manuais_conteudo
-    const { data: manualConteudo, error: insertError } = await supabase
+    const { data: conteudoData, error: insertError } = await supabase
       .from('manuais_conteudo')
       .insert({
         empreendimento_id: empreendimentoId,
@@ -35,6 +36,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) throw insertError;
+    manualConteudo = conteudoData;
 
     // Download do arquivo do storage
     // URL format: https://PROJECT_ID.supabase.co/storage/v1/object/public/BUCKET/PATH
@@ -143,6 +145,17 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
     console.error('Erro ao processar manual:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    
+    // Atualizar registro com erro
+    if (manualConteudo?.id) {
+      await supabase
+        .from('manuais_conteudo')
+        .update({
+          status: 'processando',
+          erro_mensagem: errorMessage
+        })
+        .eq('id', manualConteudo.id);
+    }
     
     return new Response(
       JSON.stringify({ error: errorMessage }),
