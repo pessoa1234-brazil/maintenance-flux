@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -94,46 +101,84 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
 
     console.log('Enviando para IA...');
 
-    // Chamar Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
+    // Função para tentar processar com IA
+    const processarComIA = async (tentativa: number): Promise<any> => {
+      try {
+        console.log(`Tentativa ${tentativa} de ${MAX_RETRIES}...`);
+
+        // Atualizar status com tentativa
+        if (tentativa > 1) {
+          await supabase
+            .from('manuais_conteudo')
+            .update({
+              status: 'processando',
+              erro_mensagem: `Tentativa ${tentativa} de ${MAX_RETRIES}`
+            })
+            .eq('id', manualConteudo.id);
+        }
+
+        // Chamar Lovable AI - usar apenas texto, não enviar como imagem para evitar erro de extração
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
               {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64}`
-                }
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `${prompt}\n\nATENÇÃO: O documento será anexado. Analise o conteúdo e extraia as informações solicitadas. Se for um documento com muitas imagens técnicas, descreva-as brevemente.`
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:application/pdf;base64,${base64}`
+                    }
+                  }
+                ]
               }
-            ]
+            ],
+            max_tokens: 4000
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('Erro na IA:', errorText);
+          
+          // Se for erro 400 (bad request), pode ser por causa do PDF - tentar próxima vez
+          if (aiResponse.status === 400 && tentativa < MAX_RETRIES) {
+            console.log('Erro 400, aguardando antes de retry...');
+            await sleep(RETRY_DELAY * tentativa); // Aumenta o delay a cada tentativa
+            return processarComIA(tentativa + 1);
           }
-        ],
-        max_tokens: 4000
-      }),
-    });
+          
+          throw new Error(`AI gateway error: ${aiResponse.status} - ${errorText}`);
+        }
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('Erro na IA:', errorText);
-      throw new Error(`AI gateway error: ${aiResponse.status} - ${errorText}`);
-    }
+        const aiResult = await aiResponse.json();
+        const conteudoExtraido = aiResult.choices[0].message.content;
 
-    const aiResult = await aiResponse.json();
-    const conteudoExtraido = aiResult.choices[0].message.content;
+        console.log('Conteúdo extraído pela IA');
+        return conteudoExtraido;
 
-    console.log('Conteúdo extraído pela IA');
+      } catch (error) {
+        if (tentativa < MAX_RETRIES) {
+          console.log(`Erro na tentativa ${tentativa}, tentando novamente em ${RETRY_DELAY * tentativa}ms...`);
+          await sleep(RETRY_DELAY * tentativa);
+          return processarComIA(tentativa + 1);
+        }
+        throw error;
+      }
+    };
+
+    // Iniciar processamento com retry
+    const conteudoExtraido = await processarComIA(1);
 
     // Atualizar registro com conteúdo extraído
     const { error: updateError } = await supabase
