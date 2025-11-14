@@ -8,6 +8,7 @@ import { Upload, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { empreendimentoSchema } from "@/lib/validation";
+import { ManualUploadProgress, UploadStage } from "./ManualUploadProgress";
 
 interface FormularioEmpreendimentoProps {
   onSuccess?: () => void;
@@ -23,6 +24,15 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
   const [manualCondominio, setManualCondominio] = useState<File | null>(null);
   const [manualUsuario, setManualUsuario] = useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [uploadProgress, setUploadProgress] = useState<{
+    proprietario: UploadStage;
+    condominio: UploadStage;
+    usuario: UploadStage;
+  }>({
+    proprietario: 'idle',
+    condominio: 'idle',
+    usuario: 'idle',
+  });
   const [formData, setFormData] = useState({
     nome: initialData?.nome ? `${initialData.nome} (Cópia)` : "",
     endereco: initialData?.endereco || "",
@@ -91,39 +101,59 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
   };
 
   const uploadManual = async (file: File, tipo: string, empreendimentoId: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${empreendimentoId}/${tipo}.${fileExt}`;
+    const tipoKey = tipo as 'proprietario' | 'condominio' | 'usuario';
     
-    const { error: uploadError, data } = await supabase.storage
-      .from("manuais")
-      .upload(fileName, file, { upsert: true });
-    
-    if (uploadError) throw uploadError;
+    try {
+      // Stage 1: Upload
+      setUploadProgress(prev => ({ ...prev, [tipoKey]: 'uploading' }));
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${empreendimentoId}/${tipo}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from("manuais")
+        .upload(fileName, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("manuais")
-      .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage
+        .from("manuais")
+        .getPublicUrl(fileName);
 
-    console.log("Iniciando processamento do manual:", { tipo, publicUrl });
+      // Stage 2: Processing
+      setUploadProgress(prev => ({ ...prev, [tipoKey]: 'processing' }));
+      console.log("Iniciando processamento do manual:", { tipo, publicUrl });
 
-    // Processar documento com IA
-    const { data: processResult, error: processError } = await supabase.functions.invoke('processar-manual', {
-      body: {
-        empreendimentoId,
-        tipoManual: tipo,
-        arquivoUrl: publicUrl
+      // Small delay to make stage visible
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Stage 3: Extracting
+      setUploadProgress(prev => ({ ...prev, [tipoKey]: 'extracting' }));
+      
+      // Processar documento com IA
+      const { data: processResult, error: processError } = await supabase.functions.invoke('processar-manual', {
+        body: {
+          empreendimentoId,
+          tipoManual: tipo,
+          arquivoUrl: publicUrl
+        }
+      });
+
+      if (processError) {
+        console.error("Erro ao processar manual:", processError);
+        setUploadProgress(prev => ({ ...prev, [tipoKey]: 'error' }));
+        toast.error(`Erro ao processar ${tipo}: ${processError.message}`);
+      } else {
+        console.log("Manual processado com sucesso:", processResult);
+        setUploadProgress(prev => ({ ...prev, [tipoKey]: 'complete' }));
+        toast.success(`Manual ${tipo} processado com sucesso`);
       }
-    });
 
-    if (processError) {
-      console.error("Erro ao processar manual:", processError);
-      toast.error(`Erro ao processar ${tipo}: ${processError.message}`);
-    } else {
-      console.log("Manual processado com sucesso:", processResult);
-      toast.success(`Manual ${tipo} enviado para processamento`);
+      return publicUrl;
+    } catch (error) {
+      setUploadProgress(prev => ({ ...prev, [tipoKey]: 'error' }));
+      throw error;
     }
-
-    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,17 +212,14 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
       const manualUrls: any = {};
       
       if (manualProprietario) {
-        toast.info("Processando Manual do Proprietário...");
         manualUrls.manual_proprietario_url = await uploadManual(manualProprietario, 'proprietario', empreendimento.id);
       }
       
       if (manualCondominio) {
-        toast.info("Processando Manual do Condomínio...");
         manualUrls.manual_condominio_url = await uploadManual(manualCondominio, 'condominio', empreendimento.id);
       }
       
       if (manualUsuario) {
-        toast.info("Processando Manual do Usuário...");
         manualUrls.manual_usuario_url = await uploadManual(manualUsuario, 'usuario', empreendimento.id);
       }
 
@@ -221,13 +248,19 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
         await Promise.all(uploadPromises);
       }
 
-      toast.success(isDuplicating ? "Empreendimento duplicado com sucesso!" : "Empreendimento cadastrado com sucesso! Os manuais estão sendo processados pela IA.");
+      toast.success(isDuplicating ? "Empreendimento duplicado com sucesso!" : "Empreendimento cadastrado com sucesso!");
       onSuccess?.();
     } catch (error: any) {
       console.error("Erro ao cadastrar empreendimento:", error);
       toast.error(error.message || "Erro ao cadastrar empreendimento");
     } finally {
       setLoading(false);
+      // Reset progress states
+      setUploadProgress({
+        proprietario: 'idle',
+        condominio: 'idle',
+        usuario: 'idle',
+      });
     }
   };
 
@@ -476,6 +509,15 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 Arquivo selecionado: {manualProprietario.name}
               </p>
             )}
+            {uploadProgress.proprietario !== 'idle' && (
+              <div className="mt-3">
+                <ManualUploadProgress
+                  stage={uploadProgress.proprietario}
+                  manualType="Manual do Proprietário"
+                  fileName={manualProprietario?.name}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -492,6 +534,15 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
                 Arquivo selecionado: {manualCondominio.name}
               </p>
             )}
+            {uploadProgress.condominio !== 'idle' && (
+              <div className="mt-3">
+                <ManualUploadProgress
+                  stage={uploadProgress.condominio}
+                  manualType="Manual do Condomínio"
+                  fileName={manualCondominio?.name}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -507,6 +558,15 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
               <p className="text-sm text-muted-foreground mt-1">
                 Arquivo selecionado: {manualUsuario.name}
               </p>
+            )}
+            {uploadProgress.usuario !== 'idle' && (
+              <div className="mt-3">
+                <ManualUploadProgress
+                  stage={uploadProgress.usuario}
+                  manualType="Manual do Usuário"
+                  fileName={manualUsuario?.name}
+                />
+              </div>
             )}
           </div>
         </CardContent>
