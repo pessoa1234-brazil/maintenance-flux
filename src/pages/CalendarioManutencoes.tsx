@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const CalendarioManutencoes = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [processandoManuais, setProcessandoManuais] = useState(false);
+  const [progressoProcessamento, setProgressoProcessamento] = useState(0);
+  const [mensagemProgresso, setMensagemProgresso] = useState("");
   const [empreendimento, setEmpreendimento] = useState<any>(null);
 
   useEffect(() => {
@@ -72,41 +75,70 @@ const CalendarioManutencoes = () => {
       return;
     }
 
-    // Verificar se existe manual do proprietário
-    if (!empreendimento.manual_proprietario_url) {
-      toast.error("Nenhum manual do proprietário vinculado ao empreendimento");
-      return;
-    }
-
     setProcessandoManuais(true);
+    setProgressoProcessamento(0);
+    setMensagemProgresso("Iniciando processo...");
+    
     try {
+      // Verificar se existe manual do proprietário vinculado
+      setProgressoProcessamento(10);
+      setMensagemProgresso("Verificando manual do proprietário...");
+      
+      // Buscar empreendimento atualizado com manual_proprietario_url
+      const { data: empAtualizado, error: empError } = await supabase
+        .from("empreendimentos")
+        .select("manual_proprietario_url")
+        .eq("id", empreendimento.id)
+        .single();
+
+      if (empError) throw empError;
+
+      if (!empAtualizado?.manual_proprietario_url) {
+        toast.error("Nenhum manual do proprietário foi carregado para este empreendimento. Por favor, faça o upload do manual primeiro.");
+        return;
+      }
+
+      setProgressoProcessamento(25);
+      setMensagemProgresso("Verificando se manual já foi processado...");
+
       // Verificar se o manual já está processado
-      const { data: manuaisProcessados } = await supabase
+      const { data: manuaisProcessados, error: consultaError } = await supabase
         .from("manuais_conteudo")
         .select("*")
         .eq("empreendimento_id", empreendimento.id)
         .eq("tipo_manual", "proprietario")
         .eq("status", "processado");
 
+      if (consultaError) throw consultaError;
+
       // Se não houver manual processado, processar primeiro
       if (!manuaisProcessados || manuaisProcessados.length === 0) {
-        toast.info("Processando manual do proprietário...");
+        setProgressoProcessamento(40);
+        setMensagemProgresso("Processando manual do proprietário com IA...");
         
         const { error: processError } = await supabase.functions.invoke('processar-manual', {
           body: { 
             empreendimentoId: empreendimento.id,
             tipoManual: "proprietario",
-            arquivoUrl: empreendimento.manual_proprietario_url
+            arquivoUrl: empAtualizado.manual_proprietario_url
           }
         });
 
         if (processError) throw processError;
 
-        // Aguardar um momento para o processamento
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Aguardar processamento (pode levar alguns segundos)
+        setProgressoProcessamento(60);
+        setMensagemProgresso("Aguardando conclusão do processamento...");
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        setProgressoProcessamento(50);
+        setMensagemProgresso("Manual já processado. Extraindo cronograma...");
       }
 
       // Agora extrair o cronograma
+      setProgressoProcessamento(75);
+      setMensagemProgresso("Extraindo cronograma de manutenção...");
+      
       const { data, error } = await supabase.functions.invoke('extrair-cronograma-manutencao', {
         body: { empreendimentoId: empreendimento.id }
       });
@@ -114,17 +146,28 @@ const CalendarioManutencoes = () => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Cronograma de manutenção extraído com sucesso dos manuais!");
-        // Recarregar dados do calendário
-        window.location.reload();
+        setProgressoProcessamento(100);
+        setMensagemProgresso("Concluído!");
+        toast.success(`Cronograma extraído com sucesso! ${data.total || 0} atividades de manutenção encontradas.`);
+        
+        // Aguardar um momento antes de recarregar
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         toast.error(data?.error || "Erro ao processar manuais");
       }
     } catch (error: any) {
       console.error("Erro ao processar manuais:", error);
       toast.error(error.message || "Erro ao extrair cronograma de manutenção");
+      setProgressoProcessamento(0);
+      setMensagemProgresso("");
     } finally {
-      setProcessandoManuais(false);
+      setTimeout(() => {
+        setProcessandoManuais(false);
+        setProgressoProcessamento(0);
+        setMensagemProgresso("");
+      }, 2000);
     }
   };
 
@@ -156,6 +199,16 @@ const CalendarioManutencoes = () => {
             </Button>
           )}
         </div>
+
+        {processandoManuais && (
+          <div className="mb-6 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{mensagemProgresso}</span>
+              <span className="font-medium">{progressoProcessamento}%</span>
+            </div>
+            <Progress value={progressoProcessamento} className="h-2" />
+          </div>
+        )}
 
         <div className="space-y-6">
           <div>
