@@ -46,15 +46,24 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplica
 
   const carregarEmpreendimentos = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setEmpreendimentos([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("empreendimentos")
         .select("*")
+        .eq("construtora_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setEmpreendimentos(data || []);
     } catch (error) {
       console.error("Erro ao carregar empreendimentos:", error);
+      toast.error("Erro ao carregar empreendimentos");
     } finally {
       setLoading(false);
     }
@@ -69,18 +78,27 @@ export const ListaEmpreendimentos = ({ onSelectEmpreendimento, onNovo, onDuplica
     if (!empreendimentoToDelete) return;
 
     try {
+      // Remover o empreendimento da lista localmente primeiro
+      setEmpreendimentos(prev => prev.filter(emp => emp.id !== empreendimentoToDelete.id));
+      
       const { error } = await supabase
         .from("empreendimentos")
         .delete()
         .eq("id", empreendimentoToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        // Se falhar, recarregar a lista para restaurar o estado correto
+        await carregarEmpreendimentos();
+        throw error;
+      }
 
       toast.success("Empreendimento excluído com sucesso!");
-      carregarEmpreendimentos();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir empreendimento:", error);
-      toast.error("Erro ao excluir empreendimento. Verifique se não há dados vinculados.");
+      const message = error?.message?.includes("foreign key") 
+        ? "Não é possível excluir este empreendimento pois existem dados vinculados (unidades, OS, etc.)"
+        : "Erro ao excluir empreendimento";
+      toast.error(message);
     } finally {
       setDeleteDialogOpen(false);
       setEmpreendimentoToDelete(null);
