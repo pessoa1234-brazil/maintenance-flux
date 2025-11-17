@@ -164,7 +164,7 @@ Identifique:
     const dadosParaSalvar = cronograma.manutencoes.map((item: any) => ({
       empreendimento_id: empreendimentoId,
       tipo_manual: 'proprietario',
-      categoria: 'cronograma_manutencao',
+      categoria: 'Manutenção Preventiva',
       subcategoria: item.sistema_predial,
       chave: `${item.sistema_predial} - ${item.atividade}`,
       valor: item.periodicidade,
