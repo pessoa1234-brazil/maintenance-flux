@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Building2, FileText, Search, Edit } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Search, Edit, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EspecificacoesTecnicas } from "./EspecificacoesTecnicas";
 import { BuscaInteligenteManuais } from "./BuscaInteligenteManuais";
 import { DocumentosManuais } from "./DocumentosManuais";
 import { DadosEstruturados } from "./DadosEstruturados";
 import { EditorManualProprietario } from "./EditorManualProprietario";
+import { AtivosEmpreendimento } from "./AtivosEmpreendimento";
 
 interface EmpreendimentoDetalhado {
   id: string;
@@ -133,6 +134,10 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
           <TabsTrigger value="geral" className="gap-2">
             <Building2 className="h-4 w-4" />
             Geral
+          </TabsTrigger>
+          <TabsTrigger value="ativos" className="gap-2">
+            <Package className="h-4 w-4" />
+            Cofre de Ativos
           </TabsTrigger>
           <TabsTrigger value="especificacoes" className="gap-2">
             <Search className="h-4 w-4" />
@@ -270,6 +275,10 @@ export const DetalheEmpreendimento = ({ id, onVoltar }: DetalheEmpreendimentoPro
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="ativos" className="space-y-6">
+          <AtivosEmpreendimento empreendimentoId={id} />
         </TabsContent>
 
         <TabsContent value="manuais" className="space-y-6">
