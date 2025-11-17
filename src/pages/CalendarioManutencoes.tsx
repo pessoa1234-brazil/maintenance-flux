@@ -72,8 +72,41 @@ const CalendarioManutencoes = () => {
       return;
     }
 
+    // Verificar se existe manual do proprietário
+    if (!empreendimento.manual_proprietario_url) {
+      toast.error("Nenhum manual do proprietário vinculado ao empreendimento");
+      return;
+    }
+
     setProcessandoManuais(true);
     try {
+      // Verificar se o manual já está processado
+      const { data: manuaisProcessados } = await supabase
+        .from("manuais_conteudo")
+        .select("*")
+        .eq("empreendimento_id", empreendimento.id)
+        .eq("tipo_manual", "proprietario")
+        .eq("status", "processado");
+
+      // Se não houver manual processado, processar primeiro
+      if (!manuaisProcessados || manuaisProcessados.length === 0) {
+        toast.info("Processando manual do proprietário...");
+        
+        const { error: processError } = await supabase.functions.invoke('processar-manual', {
+          body: { 
+            empreendimentoId: empreendimento.id,
+            tipoManual: "proprietario",
+            arquivoUrl: empreendimento.manual_proprietario_url
+          }
+        });
+
+        if (processError) throw processError;
+
+        // Aguardar um momento para o processamento
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      // Agora extrair o cronograma
       const { data, error } = await supabase.functions.invoke('extrair-cronograma-manutencao', {
         body: { empreendimentoId: empreendimento.id }
       });
