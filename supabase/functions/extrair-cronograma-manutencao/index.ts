@@ -109,17 +109,18 @@ Identifique:
                         },
                         periodicidade: { 
                           type: "string",
-                          enum: ["mensal", "bimestral", "trimestral", "semestral", "anual"],
-                          description: "Periodicidade da manutenção"
+                          description: "Periodicidade (ex: Mensal, Trimestral, Semestral, Anual)"
+                        },
+                        tipo: {
+                          type: "string",
+                          description: "Tipo de manutenção (ex: Preventiva, Preditiva)"
                         }
                       },
-                      required: ["sistema_predial", "atividade", "periodicidade"],
-                      additionalProperties: false
+                      required: ["sistema_predial", "atividade", "periodicidade"]
                     }
                   }
                 },
-                required: ["manutencoes"],
-                additionalProperties: false
+                required: ["manutencoes"]
               }
             }
           }
@@ -130,64 +131,81 @@ Identifique:
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("Erro na API Lovable AI:", aiResponse.status, errorText);
-      throw new Error(`Erro ao processar com IA: ${aiResponse.status}`);
+      throw new Error(`Erro na API Lovable: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     
-    if (!toolCall) {
-      throw new Error("IA não retornou cronograma de manutenção");
+    // Extrair o cronograma da resposta da AI
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall || !toolCall.function.arguments) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "IA não conseguiu extrair cronograma estruturado" 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const cronograma = JSON.parse(toolCall.function.arguments);
-    
-    // Salvar cronograma extraído no banco de dados
-    // Você pode criar uma tabela específica para isso ou usar manual_dados_estruturados
-    if (cronograma.manutencoes && cronograma.manutencoes.length > 0) {
-      const dadosParaInserir = cronograma.manutencoes.map((m: any) => ({
-        empreendimento_id: empreendimentoId,
-        tipo_manual: "proprietario",
-        categoria: "Manutenção Preventiva",
-        subcategoria: m.sistema_predial,
-        chave: m.atividade,
-        valor: m.periodicidade,
-        unidade: "periodicidade",
-        metadata: { fonte: "cronograma_extraido_ia" }
-      }));
 
-      const { error: insertError } = await supabase
-        .from("manual_dados_estruturados")
-        .upsert(dadosParaInserir, { 
-          onConflict: "empreendimento_id,tipo_manual,categoria,chave",
-          ignoreDuplicates: false 
-        });
-
-      if (insertError) {
-        console.error("Erro ao salvar cronograma:", insertError);
-        throw insertError;
-      }
+    if (!cronograma.manutencoes || cronograma.manutencoes.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Nenhum cronograma de manutenção encontrado no manual" 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    // Salvar no banco de dados
+    const dadosParaSalvar = cronograma.manutencoes.map((item: any) => ({
+      empreendimento_id: empreendimentoId,
+      tipo_manual: 'proprietario',
+      categoria: 'cronograma_manutencao',
+      subcategoria: item.sistema_predial,
+      chave: item.atividade,
+      valor: item.periodicidade,
+      metadata: {
+        tipo: item.tipo || 'Preventiva',
+        sistema_predial: item.sistema_predial,
+        periodicidade: item.periodicidade
+      }
+    }));
+
+    const { error: insertError } = await supabase
+      .from('manual_dados_estruturados')
+      .upsert(dadosParaSalvar, {
+        onConflict: 'empreendimento_id,tipo_manual,categoria,chave',
+        ignoreDuplicates: false
+      });
+
+    if (insertError) throw insertError;
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: true,
         cronograma: cronograma.manutencoes,
         total: cronograma.manutencoes.length
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error) {
-    console.error("Erro:", error);
+    console.error("Erro ao extrair cronograma:", error);
+    
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    
     return new Response(
       JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : "Erro desconhecido" 
+        success: false,
+        error: errorMessage
       }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }
