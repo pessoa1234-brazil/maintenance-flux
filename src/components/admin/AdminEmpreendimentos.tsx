@@ -58,9 +58,18 @@ export function AdminEmpreendimentos() {
 
   const loadEmpreendimentos = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setEmpreendimentos([]);
+        setFilteredEmpreendimentos([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('empreendimentos')
         .select('*')
+        .eq('construtora_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
