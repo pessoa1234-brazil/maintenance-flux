@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { ListaEmpreendimentos } from "./ListaEmpreendimentos";
 import { FormularioEmpreendimento } from "./FormularioEmpreendimento";
 import { DetalheEmpreendimento } from "./DetalheEmpreendimento";
+import { EmpreendimentosVinculados } from "./EmpreendimentosVinculados";
+import { toast } from "sonner";
 
 type View = "lista" | "novo" | "detalhe" | "duplicar";
 
@@ -9,6 +12,40 @@ export const Empreendimentos = () => {
   const [view, setView] = useState<View>("lista");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [duplicateData, setDuplicateData] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error("Usuário não autenticado");
+          return;
+        }
+
+        // Buscar role do usuário
+        const { data: roleData, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (roleData) {
+          setUserRole(roleData.role);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar role do usuário:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
 
   const handleSelectEmpreendimento = (id: string) => {
     setSelectedId(id);
@@ -36,6 +73,20 @@ export const Empreendimentos = () => {
     setView("lista");
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  // Se for cliente, condominio ou prestador, mostrar apenas vinculação
+  if (userRole === "cliente" || userRole === "condominio" || userRole === "prestador") {
+    return <EmpreendimentosVinculados />;
+  }
+
+  // Para construtora e admin, mostrar funcionalidade completa de gerenciamento
   return (
     <div>
       {view === "lista" && (
