@@ -160,18 +160,19 @@ Identifique:
       );
     }
 
-    // Salvar no banco de dados
+    // Salvar no banco de dados - criar chave única combinando sistema e atividade
     const dadosParaSalvar = cronograma.manutencoes.map((item: any) => ({
       empreendimento_id: empreendimentoId,
       tipo_manual: 'proprietario',
       categoria: 'cronograma_manutencao',
       subcategoria: item.sistema_predial,
-      chave: item.atividade,
+      chave: `${item.sistema_predial} - ${item.atividade}`,
       valor: item.periodicidade,
       metadata: {
         tipo: item.tipo || 'Preventiva',
         sistema_predial: item.sistema_predial,
-        periodicidade: item.periodicidade
+        periodicidade: item.periodicidade,
+        atividade_original: item.atividade
       }
     }));
 
