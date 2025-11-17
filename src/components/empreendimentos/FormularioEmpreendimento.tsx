@@ -208,6 +208,29 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
 
       if (insertError) throw insertError;
 
+      // Criar unidades automaticamente
+      if (validatedData.total_unidades > 0) {
+        const unidades = [];
+        for (let i = 1; i <= validatedData.total_unidades; i++) {
+          // Formato: 101, 102, 103... ou 201, 202, 203...
+          const numeroUnidade = (100 + i).toString();
+          unidades.push({
+            empreendimento_id: empreendimento.id,
+            numero: numeroUnidade,
+            bloco: null,
+          });
+        }
+
+        const { error: unidadesError } = await supabase
+          .from("unidades")
+          .insert(unidades);
+
+        if (unidadesError) {
+          console.error("Erro ao criar unidades:", unidadesError);
+          toast.error("Empreendimento criado, mas houve erro ao criar unidades");
+        }
+      }
+
       // Upload de manuais
       const manualUrls: any = {};
       
@@ -248,7 +271,11 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
         await Promise.all(uploadPromises);
       }
 
-      toast.success(isDuplicating ? "Empreendimento duplicado com sucesso!" : "Empreendimento cadastrado com sucesso!");
+      const mensagemSucesso = isDuplicating 
+        ? `Empreendimento duplicado com sucesso! ${validatedData.total_unidades} unidades criadas.`
+        : `Empreendimento cadastrado com sucesso! ${validatedData.total_unidades} unidades criadas.`;
+      
+      toast.success(mensagemSucesso);
       onSuccess?.();
     } catch (error: any) {
       console.error("Erro ao cadastrar empreendimento:", error);
@@ -459,6 +486,9 @@ export const FormularioEmpreendimento = ({ onSuccess, onCancel, initialData, isD
               {fieldErrors.total_unidades && (
                 <p className="text-sm text-destructive mt-1">{fieldErrors.total_unidades}</p>
               )}
+              <p className="text-sm text-muted-foreground mt-1">
+                As unidades serão criadas automaticamente (numeradas sequencialmente)
+              </p>
             </div>
             <div>
               <Label htmlFor="data_entrega">Data de Entrega *</Label>
