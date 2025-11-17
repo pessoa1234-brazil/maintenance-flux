@@ -174,11 +174,40 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
       .from('manuais_conteudo')
       .update({
         conteudo_extraido: conteudoExtraido,
-        status: 'concluido'
+        status: 'processado'
       })
       .eq('id', manualConteudo.id);
 
     if (updateError) throw updateError;
+
+    // Se for manual do proprietário, extrair cronograma de manutenções automaticamente
+    if (tipoManual === 'proprietario') {
+      console.log('Iniciando extração automática de cronograma...');
+      
+      try {
+        const { data: cronogramaData, error: cronogramaError } = await supabase.functions.invoke(
+          'extrair-cronograma-manutencao',
+          {
+            body: { empreendimentoId }
+          }
+        );
+
+        if (cronogramaError) {
+          console.error('Erro ao extrair cronograma:', cronogramaError);
+        } else {
+          console.log('Cronograma extraído com sucesso:', cronogramaData);
+        }
+      } catch (error) {
+        console.error('Falha na extração de cronograma:', error);
+        // Não bloquear o processo principal se a extração falhar
+      }
+    }
+
+    // Atualizar status final para concluído
+    await supabase
+      .from('manuais_conteudo')
+      .update({ status: 'concluido' })
+      .eq('id', manualConteudo.id);
 
     return new Response(
       JSON.stringify({

@@ -50,6 +50,16 @@ export const CalendarioManutencao = () => {
 
       if (!empreendimento) return;
 
+      // Carregar cronograma de manutenções extraído dos manuais
+      const { data: manutencoesExtraidas } = await supabase
+        .from("manual_dados_estruturados")
+        .select("*")
+        .eq("empreendimento_id", profile.empreendimento_id)
+        .eq("categoria", "Manutenção Preventiva")
+        .eq("unidade", "periodicidade");
+
+      console.log("Manutenções extraídas dos manuais:", manutencoesExtraidas);
+
       // Carregar garantias NBR 17170
       const { data: garantias } = await supabase
         .from("garantias_nbr_17170")
@@ -67,6 +77,43 @@ export const CalendarioManutencao = () => {
       const dataBase = new Date(empreendimento.data_habite_se || empreendimento.data_entrega);
       const hoje = new Date();
       const manutencoesList: ManutencaoAgendada[] = [];
+
+      // Gerar manutenções a partir dos dados extraídos dos manuais
+      if (manutencoesExtraidas && manutencoesExtraidas.length > 0) {
+        const periodicidadeMap: Record<string, number> = {
+          mensal: 1,
+          bimestral: 2,
+          trimestral: 3,
+          semestral: 6,
+          anual: 12,
+        };
+
+        manutencoesExtraidas.forEach((item) => {
+          const mesesPeriodo = periodicidadeMap[item.valor.toLowerCase()] || 12;
+
+          // Gerar manutenções para os próximos 24 meses
+          for (let i = 0; i < 24; i++) {
+            const dataManutencao = new Date(dataBase);
+            dataManutencao.setMonth(dataManutencao.getMonth() + (mesesPeriodo * i));
+
+            if (dataManutencao >= hoje) {
+              const anosPassados = Math.floor((dataManutencao.getTime() - dataBase.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+              
+              manutencoesList.push({
+                id: `manual-${item.id}-${i}`,
+                data: dataManutencao,
+                titulo: item.chave,
+                tipo: "manutencao_preventiva",
+                descricao: `${item.subcategoria || "Manutenção"} - Periodicidade: ${item.valor}`,
+                sistema_predial: item.subcategoria,
+              });
+
+              // Parar se já gerou 3 anos de manutenções
+              if (anosPassados >= 3) break;
+            }
+          }
+        });
+      }
 
       // Adicionar agendamentos existentes
       if (agendamentos) {
