@@ -12,6 +12,7 @@ interface Stats {
   osEmAndamento: number;
   osConcluidas: number;
   garantiasDisponiveis: number;
+  garantiasVencidas: number;
   manutencoesAtrasadas: number;
 }
 
@@ -29,6 +30,7 @@ export const DashboardCondominio = () => {
     osEmAndamento: 0,
     osConcluidas: 0,
     garantiasDisponiveis: 0,
+    garantiasVencidas: 0,
     manutencoesAtrasadas: 0,
   });
   const [alertas, setAlertas] = useState<AlertaPrazo[]>([]);
@@ -82,18 +84,27 @@ export const DashboardCondominio = () => {
         .single();
 
       let garantiasDisponiveis = 0;
+      let garantiasVencidas = 0;
       if (empreendimento) {
         const dataEntrega = new Date(empreendimento.data_entrega);
         const hoje = new Date();
         const anosDecorridos = (hoje.getTime() - dataEntrega.getTime()) / (1000 * 60 * 60 * 24 * 365);
 
         // Contar quantos sistemas ainda têm garantia ativa
-        const { count } = await supabase
+        const { count: ativasCount } = await supabase
           .from("garantias_nbr_17170")
           .select("*", { count: "exact", head: true })
           .gte("prazo_anos", Math.ceil(anosDecorridos));
 
-        garantiasDisponiveis = count || 0;
+        garantiasDisponiveis = ativasCount || 0;
+
+        // Contar quantos sistemas têm garantia vencida
+        const { count: vencidasCount } = await supabase
+          .from("garantias_nbr_17170")
+          .select("*", { count: "exact", head: true })
+          .lt("prazo_anos", Math.ceil(anosDecorridos));
+
+        garantiasVencidas = vencidasCount || 0;
       }
 
       // OS com prazo próximo ou atrasado
@@ -133,6 +144,7 @@ export const DashboardCondominio = () => {
         osEmAndamento: andamentoCount || 0,
         osConcluidas: concluidasCount || 0,
         garantiasDisponiveis,
+        garantiasVencidas,
         manutencoesAtrasadas: atrasadas,
       });
 
@@ -235,6 +247,11 @@ export const DashboardCondominio = () => {
             <p className="text-xs text-muted-foreground">
               Sistemas cobertos
             </p>
+            {stats.garantiasVencidas > 0 && (
+              <p className="text-xs text-destructive mt-2 font-medium">
+                {stats.garantiasVencidas} {stats.garantiasVencidas === 1 ? 'sistema vencido' : 'sistemas vencidos'}
+              </p>
+            )}
           </CardContent>
         </Card>
 
