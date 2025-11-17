@@ -169,17 +169,6 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
     // Iniciar processamento com retry
     const conteudoExtraido = await processarComIA(1);
 
-    // Atualizar registro com conteúdo extraído
-    const { error: updateError } = await supabase
-      .from('manuais_conteudo')
-      .update({
-        conteudo_extraido: conteudoExtraido,
-        status: 'processado'
-      })
-      .eq('id', manualConteudo.id);
-
-    if (updateError) throw updateError;
-
     // Se for manual do proprietário, extrair cronograma de manutenções automaticamente
     if (tipoManual === 'proprietario') {
       console.log('Iniciando extração automática de cronograma...');
@@ -203,11 +192,16 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
       }
     }
 
-    // Atualizar status final para concluído
-    await supabase
+    // Atualizar registro com conteúdo extraído e status final
+    const { error: updateError } = await supabase
       .from('manuais_conteudo')
-      .update({ status: 'concluido' })
+      .update({
+        conteudo_extraido: conteudoExtraido,
+        status: 'concluido'
+      })
       .eq('id', manualConteudo.id);
+
+    if (updateError) throw updateError;
 
     return new Response(
       JSON.stringify({
