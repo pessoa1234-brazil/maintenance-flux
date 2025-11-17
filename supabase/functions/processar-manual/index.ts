@@ -117,8 +117,7 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
             .eq('id', manualConteudo.id);
         }
 
-        // Chamar Lovable AI - apenas texto sem envio de arquivo para evitar erro de extração
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${lovableApiKey}`,
@@ -129,65 +128,60 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
             messages: [
               {
                 role: 'user',
-                content: `${prompt}\n\nNOTA: Este é um manual técnico no formato ${path.endsWith('.pdf') ? 'PDF' : 'DOCX'}. Por favor, forneça uma estrutura de exemplo baseada no tipo de manual "${tipoManual}" com as seguintes seções:\n\n1. Especificações Técnicas: Liste as principais especificações que devem constar neste tipo de manual\n2. Sistemas Prediais: Descreva os sistemas típicos (elétrico, hidráulico, etc.)\n3. Garantias: Prazos padrão conforme NBR 15575\n4. Manutenções: Cronograma típico de manutenções preventivas\n5. Contatos: Estrutura de contatos relevantes\n6. Normas: Principais normas técnicas aplicáveis\n\nForneça um conteúdo estruturado e detalhado que sirva como base para este manual.`
+                content: [
+                  {
+                    type: 'text',
+                    text: prompt
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:application/pdf;base64,${base64}`
+                    }
+                  }
+                ]
               }
-            ],
-            max_tokens: 4000
-          }),
+            ]
+          })
         });
 
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('Erro na IA:', errorText);
-          
-          // Se for erro 400 (bad request), pode ser por causa do PDF - tentar próxima vez
-          if (aiResponse.status === 400 && tentativa < MAX_RETRIES) {
-            console.log('Erro 400, aguardando antes de retry...');
-            await sleep(RETRY_DELAY * tentativa); // Aumenta o delay a cada tentativa
-            return processarComIA(tentativa + 1);
-          }
-          
-          throw new Error(`AI gateway error: ${aiResponse.status} - ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Erro na API Lovable: ${response.status} - ${errorText}`);
         }
 
-        const aiResult = await aiResponse.json();
-        const conteudoExtraido = aiResult.choices[0].message.content;
+        const data = await response.json();
+        return data.choices[0].message.content;
 
-        console.log('Conteúdo extraído pela IA');
-        return conteudoExtraido;
+      } catch (error: any) {
+        console.error(`Erro na tentativa ${tentativa}:`, error);
 
-      } catch (error) {
         if (tentativa < MAX_RETRIES) {
-          console.log(`Erro na tentativa ${tentativa}, tentando novamente em ${RETRY_DELAY * tentativa}ms...`);
-          await sleep(RETRY_DELAY * tentativa);
+          console.log(`Aguardando ${RETRY_DELAY}ms antes de tentar novamente...`);
+          await sleep(RETRY_DELAY);
           return processarComIA(tentativa + 1);
         }
+
         throw error;
       }
     };
 
-    // Iniciar processamento com retry
+    // Processar com IA com retry
     const conteudoExtraido = await processarComIA(1);
 
-    // Se for manual do proprietário, extrair cronograma de manutenções automaticamente
+    console.log('Conteúdo extraído pela IA');
+
+    // Se for manual do proprietário, extrair cronograma automaticamente
     if (tipoManual === 'proprietario') {
       console.log('Iniciando extração automática de cronograma...');
-      
       try {
-        const { data: cronogramaData, error: cronogramaError } = await supabase.functions.invoke(
-          'extrair-cronograma-manutencao',
-          {
-            body: { empreendimentoId }
-          }
-        );
-
-        if (cronogramaError) {
-          console.error('Erro ao extrair cronograma:', cronogramaError);
-        } else {
-          console.log('Cronograma extraído com sucesso:', cronogramaData);
-        }
-      } catch (error) {
-        console.error('Falha na extração de cronograma:', error);
+        const cronogramaResponse = await supabase.functions.invoke('extrair-cronograma-manutencao', {
+          body: { empreendimentoId }
+        });
+        
+        console.log('Cronograma extraído com sucesso:', cronogramaResponse.data);
+      } catch (cronogramaError) {
+        console.error('Erro ao extrair cronograma:', cronogramaError);
         // Não bloquear o processo principal se a extração falhar
       }
     }
@@ -197,7 +191,7 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
       .from('manuais_conteudo')
       .update({
         conteudo_extraido: conteudoExtraido,
-        status: 'concluido'
+        status: 'processado'
       })
       .eq('id', manualConteudo.id);
 
@@ -223,7 +217,7 @@ Organize as informações de forma clara e objetiva, mantendo referências a pá
       await supabase
         .from('manuais_conteudo')
         .update({
-          status: 'processando',
+          status: 'erro',
           erro_mensagem: errorMessage
         })
         .eq('id', manualConteudo.id);
