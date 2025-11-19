@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Edit, Trash2, Eye } from "lucide-react";
+import { Calendar, Edit, Trash2, Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -127,14 +127,142 @@ export const ListaAgendamentos = () => {
     );
   }
 
+  const gerarPreAgendamentos = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Você precisa estar autenticado para gerar pré-agendamentos");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("empreendimento_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.empreendimento_id) {
+        toast.error("Vincule-se a um empreendimento antes de gerar pré-agendamentos");
+        return;
+      }
+
+      const { data: empreendimento, error: empError } = await supabase
+        .from("empreendimentos")
+        .select("data_entrega, data_habite_se")
+        .eq("id", profile.empreendimento_id)
+        .single();
+
+      if (empError || !empreendimento) {
+        throw empError || new Error("Empreendimento não encontrado");
+      }
+
+      const dataBase = new Date(empreendimento.data_habite_se || empreendimento.data_entrega);
+      const hoje = new Date();
+
+      const { data: manutencoesExtraidas, error: manError } = await supabase
+        .from("manual_dados_estruturados")
+        .select("id, chave, valor, subcategoria")
+        .eq("empreendimento_id", profile.empreendimento_id)
+        .eq("categoria", "Manutenção Preventiva");
+
+      if (manError) throw manError;
+
+      if (!manutencoesExtraidas || manutencoesExtraidas.length === 0) {
+        toast.info("Nenhuma manutenção preventiva extraída encontrada para gerar pré-agendamentos");
+        return;
+      }
+
+      const { data: existentes } = await supabase
+        .from("agendamentos")
+        .select("id, titulo, data_inicio")
+        .eq("solicitante_id", user.id);
+
+      const existentesSet = new Set(
+        (existentes || []).map((item) => `${item.titulo}-${item.data_inicio}`)
+      );
+
+      const periodicidadeMap: Record<string, number> = {
+        mensal: 1,
+        bimestral: 2,
+        trimestral: 3,
+        semestral: 6,
+        anual: 12,
+      };
+
+      const normalizar = (texto: string) =>
+        texto
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+
+      const novosAgendamentos: any[] = [];
+
+      manutencoesExtraidas.forEach((item) => {
+        const mesesPeriodo =
+          periodicidadeMap[normalizar(item.valor)] || 12;
+
+        // Gerar ocorrências para os próximos 24 meses
+        for (let i = 0; i < 24; i++) {
+          const dataManutencao = new Date(dataBase);
+          dataManutencao.setMonth(dataManutencao.getMonth() + mesesPeriodo * i);
+
+          if (dataManutencao < hoje) continue;
+
+          const dataFim = new Date(dataManutencao);
+          dataFim.setHours(dataFim.getHours() + 1);
+
+          const chaveExistente = `${item.chave}-${dataManutencao.toISOString()}`;
+          if (existentesSet.has(chaveExistente)) continue;
+
+          existentesSet.add(chaveExistente);
+
+          novosAgendamentos.push({
+            tipo: "manutencao_preventiva",
+            titulo: item.chave,
+            descricao: `${item.subcategoria || "Manutenção"} - Periodicidade: ${item.valor}`,
+            data_inicio: dataManutencao.toISOString(),
+            data_fim: dataFim.toISOString(),
+            solicitante_id: user.id,
+            prestador_id: user.id,
+            status: "agendado",
+          });
+        }
+      });
+
+      if (novosAgendamentos.length === 0) {
+        toast.info("Nenhum novo pré-agendamento a ser criado");
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from("agendamentos")
+        .insert(novosAgendamentos);
+
+      if (insertError) throw insertError;
+
+      toast.success(`${novosAgendamentos.length} pré-agendamentos criados com sucesso!`);
+      carregarAgendamentos();
+    } catch (error) {
+      console.error("Erro ao gerar pré-agendamentos:", error);
+      toast.error("Erro ao gerar pré-agendamentos automáticos");
+    }
+  };
+
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Agendamentos Cadastrados</CardTitle>
-          <CardDescription>
-            Visualize e gerencie todos os seus agendamentos de manutenção
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div>
+            <CardTitle>Agendamentos Cadastrados</CardTitle>
+            <CardDescription>
+              Visualize e gerencie todos os seus agendamentos de manutenção
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={gerarPreAgendamentos}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            Gerar pré-agendamentos
+          </Button>
         </CardHeader>
         <CardContent>
           {agendamentos.length === 0 ? (
