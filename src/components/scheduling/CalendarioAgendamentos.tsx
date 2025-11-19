@@ -188,8 +188,17 @@ export const CalendarioAgendamentos = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
-                        <h4 className="font-semibold">{agendamento.titulo}</h4>
-                        <p className="text-sm text-muted-foreground">{agendamento.descricao}</p>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{agendamento.titulo}</h4>
+                          {agendamento.descricao?.startsWith("🤖") && (
+                            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                              Auto
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {agendamento.descricao?.replace("🤖 ", "")}
+                        </p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />

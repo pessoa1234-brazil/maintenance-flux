@@ -135,6 +135,12 @@ export const ListaAgendamentos = () => {
         return;
       }
 
+      // Carregar configuração do usuário
+      const storedConfig = localStorage.getItem(`config_pre_agendamentos_${user.id}`);
+      const config = storedConfig 
+        ? JSON.parse(storedConfig) 
+        : { anos_antecedencia: 2, tipos_manutencao: ["mensal", "bimestral", "trimestral", "semestral", "anual"] };
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("empreendimento_id")
@@ -197,13 +203,20 @@ export const ListaAgendamentos = () => {
           .trim();
 
       const novosAgendamentos: any[] = [];
+      const mesesTotal = config.anos_antecedencia * 12;
 
       manutencoesExtraidas.forEach((item) => {
-        const mesesPeriodo =
-          periodicidadeMap[normalizar(item.valor)] || 12;
+        const periodicidadeNormalizada = normalizar(item.valor);
+        
+        // Verificar se o tipo de manutenção está habilitado
+        if (!config.tipos_manutencao.includes(periodicidadeNormalizada)) {
+          return;
+        }
 
-        // Gerar ocorrências para os próximos 24 meses
-        for (let i = 0; i < 24; i++) {
+        const mesesPeriodo = periodicidadeMap[periodicidadeNormalizada] || 12;
+        const numOcorrencias = Math.ceil(mesesTotal / mesesPeriodo);
+
+        for (let i = 0; i < numOcorrencias; i++) {
           const dataManutencao = new Date(dataBase);
           dataManutencao.setMonth(dataManutencao.getMonth() + mesesPeriodo * i);
 
@@ -220,7 +233,7 @@ export const ListaAgendamentos = () => {
           novosAgendamentos.push({
             tipo: "manutencao_preventiva",
             titulo: item.chave,
-            descricao: `${item.subcategoria || "Manutenção"} - Periodicidade: ${item.valor}`,
+            descricao: `🤖 ${item.subcategoria || "Manutenção"} - Periodicidade: ${item.valor}`,
             data_inicio: dataManutencao.toISOString(),
             data_fim: dataFim.toISOString(),
             solicitante_id: user.id,

@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarioAgendamentos } from "@/components/scheduling/CalendarioAgendamentos";
+import { ConfiguracaoPreAgendamentos } from "@/components/scheduling/ConfiguracaoPreAgendamentos";
+import { RelatorioPreAgendamentos } from "@/components/scheduling/RelatorioPreAgendamentos";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 
 const Scheduling = () => {
@@ -39,7 +42,25 @@ const Scheduling = () => {
           </Button>
         </div>
         
-        <CalendarioAgendamentos />
+        <Tabs defaultValue="calendario" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="calendario">Calendário</TabsTrigger>
+            <TabsTrigger value="configuracao">Configuração</TabsTrigger>
+            <TabsTrigger value="relatorio">Relatórios</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="calendario" className="space-y-6">
+            <CalendarioAgendamentos />
+          </TabsContent>
+          
+          <TabsContent value="configuracao" className="space-y-6">
+            <ConfiguracaoPreAgendamentos />
+          </TabsContent>
+          
+          <TabsContent value="relatorio" className="space-y-6">
+            <RelatorioPreAgendamentos />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
