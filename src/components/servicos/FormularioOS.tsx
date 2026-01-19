@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { AlertCircle, Shield, Wrench, Plus, Upload, X } from "lucide-react";
+import { AlertCircle, Shield, Wrench, Plus, Upload, X, Video, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ordemServicoSchema } from "@/lib/validation";
 
@@ -32,6 +32,7 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
   const [prazoCalculado, setPrazoCalculado] = useState<number | null>(null);
   const [empreendimentos, setEmpreendimentos] = useState<any[]>([]);
   const [fotosPatologia, setFotosPatologia] = useState<File[]>([]);
+  const [videosPatologia, setVideosPatologia] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
@@ -126,6 +127,14 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
         throw new Error((firstError as any)?._errors[0] || "Dados inválidos");
       }
 
+      // Validação de foto e vídeo obrigatórios
+      if (fotosPatologia.length === 0) {
+        throw new Error("É obrigatório anexar pelo menos uma foto do problema");
+      }
+      if (videosPatologia.length === 0) {
+        throw new Error("É obrigatório anexar pelo menos um vídeo do problema");
+      }
+
       const validatedData = validationResult.data;
 
       const { data: profile } = await supabase
@@ -145,25 +154,44 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
 
       // Upload de fotos de patologia
       let fotosUrls: string[] = [];
-      if (fotosPatologia.length > 0) {
-        const uploadPromises = fotosPatologia.map(async (foto, index) => {
-          const fileExt = foto.name.split('.').pop();
-          const fileName = `os-patologia/${user.id}/${Date.now()}_${index}.${fileExt}`;
-          const { error: uploadError, data } = await supabase.storage
-            .from("empreendimentos")
-            .upload(fileName, foto);
-          
-          if (uploadError) throw uploadError;
+      const uploadFotoPromises = fotosPatologia.map(async (foto, index) => {
+        const fileExt = foto.name.split('.').pop();
+        const fileName = `os-patologia/fotos/${user.id}/${Date.now()}_${index}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("empreendimentos")
+          .upload(fileName, foto);
+        
+        if (uploadError) throw uploadError;
 
-          const { data: { publicUrl } } = supabase.storage
-            .from("empreendimentos")
-            .getPublicUrl(fileName);
-          
-          return publicUrl;
-        });
+        const { data: { publicUrl } } = supabase.storage
+          .from("empreendimentos")
+          .getPublicUrl(fileName);
+        
+        return publicUrl;
+      });
+      fotosUrls = await Promise.all(uploadFotoPromises);
 
-        fotosUrls = await Promise.all(uploadPromises);
-      }
+      // Upload de vídeos de patologia
+      let videosUrls: string[] = [];
+      const uploadVideoPromises = videosPatologia.map(async (video, index) => {
+        const fileExt = video.name.split('.').pop();
+        const fileName = `os-patologia/videos/${user.id}/${Date.now()}_${index}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("empreendimentos")
+          .upload(fileName, video);
+        
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("empreendimentos")
+          .getPublicUrl(fileName);
+        
+        return publicUrl;
+      });
+      videosUrls = await Promise.all(uploadVideoPromises);
+
+      // Combinar fotos e vídeos para salvar no campo fotos_antes
+      const allMediaUrls = [...fotosUrls, ...videosUrls];
 
       const { error } = await supabase.from("ordens_servico").insert({
         titulo: validatedData.titulo,
@@ -176,7 +204,7 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
         unidade_id: profile.unidade_id,
         origem: "SISTEMA" as any,
         status: "A_FAZER" as any,
-        fotos_antes: fotosUrls.length > 0 ? fotosUrls : null,
+        fotos_antes: allMediaUrls.length > 0 ? allMediaUrls : null,
       });
 
       if (error) throw error;
@@ -362,51 +390,118 @@ export const FormularioOS = ({ onSuccess, onCancel }: FormularioOSProps) => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="fotos_patologia">Fotos da Patologia</Label>
-            <div className="space-y-2">
-              <Label htmlFor="fotos_patologia" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary transition-colors">
-                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Clique para adicionar fotos da patologia
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="fotos_patologia" className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Fotos do Problema *
               </Label>
-              <Input
-                id="fotos_patologia"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files) {
-                    const newFiles = Array.from(e.target.files);
-                    setFotosPatologia(prev => [...prev, ...newFiles]);
-                  }
-                }}
-                className="hidden"
-              />
-              
-              {fotosPatologia.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {fotosPatologia.map((foto, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(foto)}
-                        alt={`Foto ${index + 1}`}
-                        className="w-full h-24 object-cover rounded"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFotosPatologia(prev => prev.filter((_, i) => i !== index))}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground mb-2">Obrigatório: pelo menos 1 foto</p>
+              <div className="space-y-2">
+                <Label htmlFor="fotos_patologia" className="cursor-pointer">
+                  <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    fotosPatologia.length === 0 ? 'border-destructive/50 hover:border-destructive' : 'border-border hover:border-primary'
+                  }`}>
+                    <Camera className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Clique para adicionar fotos
+                    </p>
+                  </div>
+                </Label>
+                <Input
+                  id="fotos_patologia"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files);
+                      setFotosPatologia(prev => [...prev, ...newFiles]);
+                    }
+                  }}
+                  className="hidden"
+                />
+                
+                {fotosPatologia.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {fotosPatologia.map((foto, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={URL.createObjectURL(foto)}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-20 object-cover rounded"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFotosPatologia(prev => prev.filter((_, i) => i !== index))}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {fotosPatologia.length > 0 && (
+                  <p className="text-xs text-green-600">✓ {fotosPatologia.length} foto(s) selecionada(s)</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="videos_patologia" className="flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Vídeos do Problema *
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">Obrigatório: pelo menos 1 vídeo</p>
+              <div className="space-y-2">
+                <Label htmlFor="videos_patologia" className="cursor-pointer">
+                  <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    videosPatologia.length === 0 ? 'border-destructive/50 hover:border-destructive' : 'border-border hover:border-primary'
+                  }`}>
+                    <Video className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Clique para adicionar vídeos
+                    </p>
+                  </div>
+                </Label>
+                <Input
+                  id="videos_patologia"
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files);
+                      setVideosPatologia(prev => [...prev, ...newFiles]);
+                    }
+                  }}
+                  className="hidden"
+                />
+                
+                {videosPatologia.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {videosPatologia.map((video, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm truncate max-w-[150px]">{video.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setVideosPatologia(prev => prev.filter((_, i) => i !== index))}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {videosPatologia.length > 0 && (
+                  <p className="text-xs text-green-600">✓ {videosPatologia.length} vídeo(s) selecionado(s)</p>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
